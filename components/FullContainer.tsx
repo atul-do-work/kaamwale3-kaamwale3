@@ -26,7 +26,7 @@ const formatTime = (minutes: number): string => {
 // Stat card component for reusability
 const StatCard = ({ icon, label, value, color, isLarge = false }: any) => (
   <LinearGradient
-    colors={color === 'green' ? ['#10b981', '#059669'] : color === 'blue' ? ['#3b82f6', '#1d4ed8'] : color === 'purple' ? ['#a855f7', '#7e22ce'] : ['#f59e0b', '#d97706']}
+    colors={['#1a2f4d', '#152039']} // ✅ Dark blue bubble style
     start={{ x: 0, y: 0 }}
     end={{ x: 1, y: 1 }}
     style={[styles.statCard, isLarge && styles.statCardLarge]}

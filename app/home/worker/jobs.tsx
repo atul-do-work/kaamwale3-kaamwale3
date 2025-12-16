@@ -277,25 +277,19 @@ export default function Jobs(): React.ReactElement {
     };
 
     const handleNewJob = async (job: Job) => {
-      if (job.acceptedBy !== workerName) return;
-
-      const location = job.location || (await getAddressFromCoords(job.lat, job.lon));
-
-      setAcceptedJobs((prev) => {
-        const exists = prev.find((j) => j._id === job._id);
-        if (!exists) return [...prev, { ...job, location }];
-        return prev;
-      });
+      // Refresh accepted jobs list whenever any job is updated
+      console.log(`📨 Job update received, refreshing accepted jobs list`);
+      fetchAcceptedJobs(workerName, token);
     };
 
     // Subscribe to socket events
     socket.on("jobUpdated", handleJobUpdated);
-    socket.on("newJob", handleNewJob);
+    socket.on("jobUpdated", handleNewJob); // ✅ Listen for any job updates
 
     // Cleanup on unmount
     return () => {
       socket.off("jobUpdated", handleJobUpdated);
-      socket.off("newJob", handleNewJob);
+      socket.off("jobUpdated", handleNewJob);
     };
   }, [workerName, token]);
 
