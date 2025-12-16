@@ -120,11 +120,37 @@ export default function Wallet(): React.ReactElement {
         }
       };
 
+      // ✅ Listen for wallet refresh events (from payment)
+      const handleWalletRefresh = (data: any) => {
+        console.log(`💸 Wallet refresh event received:`, data);
+        if (!walletFetchPending) {
+          setWalletFetchPending(true);
+          setTimeout(() => {
+            fetchWallet().finally(() => setWalletFetchPending(false));
+          }, 500);
+        }
+      };
+
+      // ✅ Listen for wallet updated events (from Razorpay payment)
+      const handleWalletUpdated = (data: any) => {
+        console.log(`💰 Wallet updated from payment:`, data);
+        if (data.phone === currentUserPhone && !walletFetchPending) {
+          setWalletFetchPending(true);
+          setTimeout(() => {
+            fetchWallet().finally(() => setWalletFetchPending(false));
+          }, 500);
+        }
+      };
+
       socket.on("jobUpdated", handleJobUpdated);
+      socket.on("walletRefresh", handleWalletRefresh);
+      socket.on("walletUpdated", handleWalletUpdated);
 
       return () => {
         clearTimeout(timer);
         socket.off("jobUpdated", handleJobUpdated);
+        socket.off("walletRefresh", handleWalletRefresh);
+        socket.off("walletUpdated", handleWalletUpdated);
       };
     }
   }, [currentUserPhone]);
@@ -146,8 +172,12 @@ export default function Wallet(): React.ReactElement {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      if (res.data.success) {
-        setWallet(res.data.wallet);
+      if (res.data.success && res.data.wallet) {
+        console.log(`💰 Wallet fetched: ₹${res.data.wallet.balance}`);
+        setWallet({
+          balance: res.data.wallet.balance || 0,
+          transactions: res.data.wallet.transactions || []
+        });
         return Promise.resolve();
       }
       return Promise.reject('Failed to fetch wallet');

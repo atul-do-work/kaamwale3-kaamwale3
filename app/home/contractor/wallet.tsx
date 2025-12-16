@@ -335,6 +335,14 @@ export default function ContractorWalletAttendance() {
       if (verifyData.success) {
         Alert.alert("Success", "Payment successful! Amount added to worker's wallet");
         setJobs(prev => prev.map(j => (j._id === currentPaymentJobId ? { ...j, paymentStatus: "Paid" } : j)));
+        
+        // ✅ Emit events to notify worker
+        const job = jobs.find(j => j._id === currentPaymentJobId);
+        if (job) {
+          socket.emit("walletRefresh", { phone: job.acceptedBy, amount: job.amount });
+          socket.emit("notificationRefresh", { phone: job.acceptedBy });
+        }
+        
         socket.emit("jobUpdated");
         socket.emit("walletUpdated", walletBalance);
         setCurrentPaymentJobId(null);

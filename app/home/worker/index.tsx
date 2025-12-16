@@ -14,9 +14,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import WorkerMap from "../../../components/WorkerMap";
-import WorkerCard from "../../../components/WorkerCard";
 import FullContainer from "../../../components/FullContainer";
-import { workerCards } from "../../../data/WorkerCardData";
 import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { socket } from "../../../utils/socket"; // ✅ Use global socket instead
@@ -758,16 +756,6 @@ export default function WorkerHome() {
 
       <View style={styles.topSection}>
         <WorkerMap style={styles.map} />
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.horizontalScrollContainer}
-        >
-          {workerCards.map(c => (
-            <WorkerCard key={c.id.toString()} data={c} />
-          ))}
-        </ScrollView>
       </View>
 
       {currentJob && (
