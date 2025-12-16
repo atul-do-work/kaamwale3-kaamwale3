@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "kaamwale3",
+    "slug": "kaamwale3",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "kaamwale3",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.atulsharma897438.kaamwale3",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.atulsharma897438.kaamwale3"
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/splash.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "backgroundColor": "#000000"
+          }
+        }
+      ],
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7c0ce5f4-53f3-4efc-a36b-8240d76194a4"
+      }
+    }
+  }
+}
