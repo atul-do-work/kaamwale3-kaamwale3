@@ -139,7 +139,15 @@ export default function ContractorWalletAttendance() {
     fetchJobs();
 
     socket.on("jobUpdated", fetchJobs);
-    socket.on("walletUpdated", (balance: number) => setWalletBalance(balance));
+    // ✅ Handle both number (from old emit) and object (from new emit)
+    socket.on("walletUpdated", (data: number | any) => {
+      if (typeof data === 'number') {
+        setWalletBalance(data);
+      } else if (data && typeof data === 'object' && data.balance) {
+        // If it's an object with balance property, extract it
+        setWalletBalance(data.balance);
+      }
+    });
 
     return () => {
       socket.off("jobUpdated", fetchJobs);
