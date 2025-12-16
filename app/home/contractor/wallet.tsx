@@ -11,6 +11,7 @@ import {
   TextInput,
   Modal,
   Pressable,
+  WebView,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -68,6 +69,11 @@ export default function ContractorWalletAttendance() {
   const [ratingStars, setRatingStars] = useState(5);
   const [ratingFeedback, setRatingFeedback] = useState("");
   const [submittingRating, setSubmittingRating] = useState(false);
+
+  // ✅ Razorpay payment states
+  const [razorpayModalVisible, setRazorpayModalVisible] = useState(false);
+  const [razorpayHtml, setRazorpayHtml] = useState("");
+  const [currentPaymentJobId, setCurrentPaymentJobId] = useState<string | null>(null);
 
   // Load contractor name & token from storage
   useEffect(() => {
@@ -186,8 +192,157 @@ export default function ContractorWalletAttendance() {
       // preserve existing cash flow
       payWorker(jobId, "Cash");
     } else {
-      // keep online flow as it is; backend accepts mode: "Online" so call same endpoint
-      payWorker(jobId, "Online");
+      // Open Razorpay for online payment
+      initiateRazorpayPayment(jobId);
+    }
+  };
+
+  // ✅ Initiate Razorpay Payment
+  const initiateRazorpayPayment = async (jobId: string) => {
+    try {
+      const job = jobs.find(j => j._id === jobId);
+      if (!job) return Alert.alert("Error", "Job not found");
+
+      // Step 1: Create order on backend
+      const orderResponse = await fetch(`${SERVER_URL}/api/payment/create-order`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          jobId: job._id,
+          amount: job.amount,
+          workerPhone: job.acceptedBy,
+          workerName: job.acceptedBy
+        })
+      });
+
+      const orderData = await orderResponse.json();
+      if (!orderData.success) {
+        return Alert.alert("Error", "Failed to create payment order");
+      }
+
+      // Step 2: Create Razorpay checkout HTML
+      const razorpayHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+          <style>
+            body { margin: 0; padding: 0; background: #f5f5f5; }
+            #checkout-container { display: flex; justify-content: center; align-items: center; height: 100vh; }
+          </style>
+        </head>
+        <body>
+          <div id="checkout-container">
+            <p>Opening Razorpay Checkout...</p>
+          </div>
+          <script>
+            var options = {
+              "key": "${orderData.key_id}",
+              "amount": ${orderData.amount},
+              "currency": "INR",
+              "name": "Kaamwale",
+              "description": "Payment for job: ${job.title}",
+              "order_id": "${orderData.orderId}",
+              "handler": function (response){
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                  type: 'payment_success',
+                  paymentId: response.razorpay_payment_id,
+                  orderId: response.razorpay_order_id,
+                  signature: response.razorpay_signature
+                }));
+              },
+              "prefill": {
+                "name": "Test",
+                "email": "test@example.com",
+                "contact": "9999999999"
+              },
+              "theme": {
+                "color": "#1a2f4d"
+              }
+            };
+            var rzp1 = new Razorpay(options);
+            rzp1.open();
+            
+            rzp1.on('payment.failed', function (response){
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'payment_failed',
+                error: response.error.description
+              }));
+            });
+          </script>
+        </body>
+        </html>
+      `;
+
+      setRazorpayHtml(razorpayHtml);
+      setCurrentPaymentJobId(jobId);
+      setRazorpayModalVisible(true);
+    } catch (error) {
+      Alert.alert("Error", "Failed to initiate payment");
+      console.error("Payment initiation failed:", error);
+    }
+  };
+
+  // ✅ Handle Razorpay WebView messages
+  const handleRazorpayMessage = async (event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+
+      if (data.type === 'payment_success') {
+        await verifyRazorpayPayment(data);
+      } else if (data.type === 'payment_failed') {
+        setRazorpayModalVisible(false);
+        Alert.alert("Payment Failed", data.error || "Payment cancelled");
+      }
+    } catch (error) {
+      console.error("Error handling Razorpay response:", error);
+    }
+  };
+
+  // ✅ Verify Razorpay Payment
+  const verifyRazorpayPayment = async (data: any) => {
+    if (!currentPaymentJobId) return;
+
+    try {
+      const job = jobs.find(j => j._id === currentPaymentJobId);
+      if (!job) return;
+
+      const verifyResponse = await fetch(`${SERVER_URL}/api/payment/verify-payment`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          orderId: data.orderId,
+          paymentId: data.paymentId,
+          signature: data.signature,
+          jobId: job._id,
+          amount: job.amount,
+          workerPhone: job.acceptedBy
+        })
+      });
+
+      const verifyData = await verifyResponse.json();
+
+      setRazorpayModalVisible(false);
+
+      if (verifyData.success) {
+        Alert.alert("Success", "Payment successful! Amount added to worker's wallet");
+        setJobs(prev => prev.map(j => (j._id === currentPaymentJobId ? { ...j, paymentStatus: "Paid" } : j)));
+        socket.emit("jobUpdated");
+        socket.emit("walletUpdated", walletBalance);
+        setCurrentPaymentJobId(null);
+      } else {
+        Alert.alert("Error", verifyData.message || "Payment verification failed");
+      }
+    } catch (error) {
+      setRazorpayModalVisible(false);
+      Alert.alert("Error", "Payment verification failed");
+      console.error("Verification error:", error);
     }
   };
 
@@ -637,6 +792,31 @@ export default function ContractorWalletAttendance() {
               </View>
             </View>
           </View>
+        </View>
+      </Modal>
+
+      {/* ✅ Razorpay Payment Modal */}
+      <Modal visible={razorpayModalVisible} transparent animationType="slide">
+        <View style={{ flex: 1, backgroundColor: "#fff" }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: 12, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: "#DDD" }}>
+            <Text style={{ fontSize: 16, fontWeight: "600", color: "#333" }}>Payment</Text>
+            <TouchableOpacity onPress={() => setRazorpayModalVisible(false)}>
+              <MaterialIcons name="close" size={28} color="#333" />
+            </TouchableOpacity>
+          </View>
+          {razorpayHtml ? (
+            <WebView
+              source={{ html: razorpayHtml }}
+              onMessage={handleRazorpayMessage}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+            />
+          ) : (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+              <ActivityIndicator size="large" color="#1a2f4d" />
+              <Text style={{ marginTop: 12, color: "#666" }}>Loading payment...</Text>
+            </View>
+          )}
         </View>
       </Modal>
     </View>
