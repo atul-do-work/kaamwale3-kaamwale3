@@ -11,8 +11,8 @@ import {
   TextInput,
   Modal,
   Pressable,
-  WebView,
 } from "react-native";
+import { WebView } from "react-native-webview";
 import { MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
