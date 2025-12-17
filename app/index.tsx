@@ -93,20 +93,25 @@ export default function LoginScreen() {
       }
 
       await AsyncStorage.setItem("user", JSON.stringify(data.user)); // save user object
+      
+      console.log(`✅ Login successful for ${data.user.role}: ${data.user.phone}`);
 
       Alert.alert("Success", `Logged in as ${data.user.role}`);
 
       // ------------------------
       //  NAVIGATION BASED ON ROLE
       // ------------------------
+      console.log(`🚀 Navigating to /home/${data.user.role}`);
       if (data.user.role === "worker") {
+        console.log("→ Routing to /home/worker");
         router.replace("/home/worker");
       } else {
+        console.log("→ Routing to /home/contractor");
         router.replace("/home/contractor");
       }
     } catch (error) {
-      console.error(error);
-      Alert.alert("Error", "Server not responding");
+      console.error("Login error:", error);
+      Alert.alert("Error", error.message || "Server not responding");
     } finally {
       setLoading(false);
     }
