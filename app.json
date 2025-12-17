@@ -49,8 +49,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "7c0ce5f4-53f3-4efc-a36b-8240d76194a4"
+        "projectId": "8a6c9f14-6f97-4d37-8daf-a8e8a86487cb"
       }
-    }
+    },
+    "owner": "atul-dowork"
   }
 }
