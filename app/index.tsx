@@ -46,7 +46,7 @@ export default function LoginScreen() {
           console.warn('⚠️ Location permission denied');
         }
       } catch (locError) {
-        console.warn('⚠️ Could not get location:', locError.message);
+        console.warn('⚠️ Could not get location:', (locError as Error).message);
       }
 
       const response = await fetch(`${API_BASE}/login`, {
@@ -111,7 +111,7 @@ export default function LoginScreen() {
       }
     } catch (error) {
       console.error("Login error:", error);
-      Alert.alert("Error", error.message || "Server not responding");
+      Alert.alert("Error", (error as Error).message || "Server not responding");
     } finally {
       setLoading(false);
     }
