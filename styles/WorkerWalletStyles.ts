@@ -10,7 +10,7 @@ export default StyleSheet.create({
   headerContainer: {
     width: '100%',
     height: height * 0.2,
-    backgroundColor: '#610e9c',
+    backgroundColor: '#1a2f4d',
     justifyContent: 'center',
     alignItems: 'center',
     borderBottomLeftRadius: 25,
@@ -55,9 +55,9 @@ export default StyleSheet.create({
     color: '#333',
   },
   balanceAmount: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: 'bold',
-    color: '#610e9c',
+    color: '#1a2f4d',
   },
   // Cards row container
   cardsRow: {
@@ -85,7 +85,7 @@ export default StyleSheet.create({
   cardAmount: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#610e9c',
+    color: '#1a2f4d',
     marginBottom: 6,
   },
   cardTitle: {

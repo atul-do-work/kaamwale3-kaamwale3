@@ -168,7 +168,7 @@ export default function Profile(): React.ReactElement {
   return (
     <ScrollView style={styles.container}>
       <LinearGradient
-        colors={["#2a2a31ff", "#6a0dad"]}
+        colors={["#1a2f4d", "#1a2f4d"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.headerContainer}
@@ -199,7 +199,7 @@ export default function Profile(): React.ReactElement {
             style={styles.profileCard}
             onPress={() => router.push(card.route as any)}
           >
-            <MaterialIcons name={card.icon as any} size={28} color="#610e9c" />
+            <MaterialIcons name={card.icon as any} size={28} color="#1a2f4d" />
             <Text style={styles.cardTitle}>{card.title}</Text>
           </TouchableOpacity>
         ))}
@@ -210,13 +210,13 @@ export default function Profile(): React.ReactElement {
           <Text style={styles.referralHeading}>Referral Bonus</Text>
           <Text style={styles.referralText}>You have earned ₹500 from referrals</Text>
         </View>
-        <MaterialIcons name="card-giftcard" size={40} color="#610e9c" />
+        <MaterialIcons name="card-giftcard" size={40} color="#1a2f4d" />
       </View>
 
       {infoCards.map((card, index) => (
         <View key={index} style={styles.supportContainer}>
           <View style={styles.headerWithIcon}>
-            <MaterialIcons name={card.icon as any} size={24} color="#610e9c" />
+            <MaterialIcons name={card.icon as any} size={24} color="#1a2f4d" />
             <Text style={styles.supportHeader}>{card.header}</Text>
           </View>
 
@@ -227,7 +227,7 @@ export default function Profile(): React.ReactElement {
               onPress={() => navigateTo(option.screen)}
             >
               <Text style={styles.supportText}>{option.name}</Text>
-              <MaterialIcons name="keyboard-arrow-right" size={24} color="#610e9c" />
+              <MaterialIcons name="keyboard-arrow-right" size={24} color="#1a2f4d" />
             </TouchableOpacity>
           ))}
         </View>

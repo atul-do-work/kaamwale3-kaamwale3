@@ -116,7 +116,7 @@ export default function ContractorWalletAttendance() {
 
       const myJobs = data
         .filter(j => j.contractorName === contractorName && j.status === "accepted")
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
       console.log(`📥 Fetched ${data.length} total jobs, filtered to ${myJobs.length} accepted jobs for contractor: ${contractorName}`);
 
@@ -604,7 +604,7 @@ export default function ContractorWalletAttendance() {
             <View
               style={{
                 marginTop: 15,
-                backgroundColor: "#FFF3CD",
+                backgroundColor: "#ebeff6c4",
                 borderLeftWidth: 4,
                 borderLeftColor: "#FF9500",
                 padding: 12,

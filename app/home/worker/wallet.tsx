@@ -264,7 +264,7 @@ export default function Wallet(): React.ReactElement {
     <ScrollView style={styles.container}>
       {/* Earnings Header */}
       <LinearGradient
-        colors={['#2a2a31ff', '#6a0dad']}
+        colors={['#223550ff', '#1a2f4d']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.headerContainer}
@@ -288,7 +288,7 @@ export default function Wallet(): React.ReactElement {
       {/* Deposit & Withdraw Buttons */}
       <View style={styles.buttonRow}>
         <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: '#610e9c' }]}
+          style={[styles.actionButton, { backgroundColor: '#1a2f4d' }]}
           onPress={handleDepositClick}
         >
           <Text style={styles.buttonText}>Deposit</Text>
@@ -312,7 +312,7 @@ export default function Wallet(): React.ReactElement {
             onChangeText={setDepositAmount}
           />
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: '#610e9c', flex: 0.3 }]}
+            style={[styles.actionButton, { backgroundColor: '#1a2f4d', flex: 0.3 }]}
             onPress={confirmDeposit}
           >
             <Text style={styles.buttonText}>Confirm</Text>
@@ -343,7 +343,7 @@ export default function Wallet(): React.ReactElement {
       <View style={styles.cardsRow}>
         {cards.map((card) => (
           <View key={card.id} style={styles.cardContainer}>
-            <MaterialIcons name={card.icon as any} size={28} color="#610e9c" />
+            <MaterialIcons name={card.icon as any} size={28} color="#1a2f4d" />
             <Text style={styles.cardAmount}>₹{card.amount}</Text>
             <Text style={styles.cardTitle}>{card.title}</Text>
             <Text style={styles.cardDate}>{card.date}</Text>

@@ -56,7 +56,7 @@ export default StyleSheet.create({
   },
   statLabel: {
     fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.85)',
+    color: 'rgba(255, 255, 255, 0.7)',
     fontWeight: '500',
     textAlign: 'center',
     marginBottom: 6,
@@ -64,7 +64,7 @@ export default StyleSheet.create({
   statValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#fff',
+    color: '#10b981',
     textAlign: 'center',
   },
   statValueLarge: {
@@ -126,12 +126,12 @@ export default StyleSheet.create({
 
   // Tips Section
   tipsSection: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: '#1a2f4d',
     borderRadius: 16,
     padding: 16,
     marginBottom: 20,
     borderLeftWidth: 4,
-    borderLeftColor: '#f59e0b',
+    borderLeftColor: '#20c32eff',
   },
   tipHeader: {
     flexDirection: 'row',
@@ -141,12 +141,12 @@ export default StyleSheet.create({
   tipTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#92400e',
+    color: '#ebe7e5ff',
     marginLeft: 8,
   },
   tipText: {
     fontSize: 13,
-    color: '#78350f',
+    color: '#ebe7e5ff',
     fontWeight: '500',
     marginBottom: 6,
     lineHeight: 18,

@@ -10,7 +10,7 @@ export default StyleSheet.create({
   headerContainer: {
     width: '100%',
     height: height * 0.2,
-    backgroundColor: '#610e9c',
+    backgroundColor: '#1a2f4d',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
@@ -148,7 +148,7 @@ supportOption: {
 supportText: {
   fontSize: 14,
   fontWeight: '600',
-  color: '#610e9c',
+  color: '#1a2f4d',
 },
 headerWithIcon: {
   flexDirection: 'row',

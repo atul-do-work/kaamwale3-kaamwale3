@@ -187,7 +187,7 @@ export default function NotificationHistoryScreen(): React.ReactElement {
       job_completed: { icon: "task-alt", color: "#10B981" },
       job_cancelled: { icon: "close-circle", color: "#EF4444" },
       review_reminder: { icon: "feedback", color: "#3B82F6" },
-      default: { icon: "notifications", color: "#667eea" },
+      default: { icon: "notifications", color: "#1a2f4d" },
     };
 
     return iconMap[type] || iconMap.default;
@@ -248,7 +248,7 @@ export default function NotificationHistoryScreen(): React.ReactElement {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#667eea" />
+        <ActivityIndicator size="large" color="#1a2f4d" />
         <Text style={styles.loadingText}>Loading notifications...</Text>
       </View>
     );
@@ -257,7 +257,7 @@ export default function NotificationHistoryScreen(): React.ReactElement {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <LinearGradient colors={["#667eea", "#A78BFA"]} style={styles.header}>
+      <LinearGradient colors={["#1a2f4d", "#1a2f4d"]} style={styles.header}>
         <View style={styles.headerTop}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -320,7 +320,7 @@ export default function NotificationHistoryScreen(): React.ReactElement {
               style={styles.markAllBtn}
               onPress={handleMarkAllAsRead}
             >
-              <Ionicons name="checkmark-done" size={18} color="#667eea" />
+              <Ionicons name="checkmark-done" size={18} color="#1a2f4d" />
               <Text style={styles.markAllText}>Mark all as read</Text>
             </TouchableOpacity>
           )}
@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   markAllText: {
-    color: "#6C63FF",
+    color: "#1a2f4d",
     fontSize: 14,
     fontWeight: "600",
   },

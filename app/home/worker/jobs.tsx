@@ -304,7 +304,7 @@ export default function Jobs(): React.ReactElement {
           acceptedJobs.map((job) => {            return (
               <View key={job._id} style={{  marginBottom: 14 }}>
                 <LinearGradient
-                  colors={["#610e9c", "#2a2a31"]}
+                  colors={["#1a2f4d", "#2b4972ff"]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={{
@@ -313,7 +313,7 @@ export default function Jobs(): React.ReactElement {
                     paddingHorizontal: 14,
                     paddingVertical: 12,
                     borderLeftWidth: 5,
-                    borderLeftColor: "#FFD700",
+                    borderLeftColor: "#1bcf1bff",
                   }}
                 >
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -337,7 +337,7 @@ export default function Jobs(): React.ReactElement {
                           setMapModalVisible(true);
                         }}
                       >
-                        <MaterialIcons name="location-on" size={14} color="#FF6B6B" />
+                        <MaterialIcons name="location-on" size={24} color="#FF6B6B" />
                         <Text style={{ color: "#ffffffff", fontSize: 11, marginLeft: 4, textDecorationLine: "none" }}>
                           {job.location}
                         </Text>
