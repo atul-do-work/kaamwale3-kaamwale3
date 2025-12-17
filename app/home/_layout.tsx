@@ -53,6 +53,10 @@ export default function Layout() {
 
   // Fallback if role is not set (redirect to login)
   if (!role) {
+    // Redirect to login
+    if (!loading) {
+      router.replace('/');
+    }
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' }}>
         <ActivityIndicator size="large" color="#1a2f4d" />
