@@ -2,38 +2,36 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
-// Keep the splash screen visible while we fetch resources
+// Keep the splash screen visible while we check user auth
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   useEffect(() => {
-    // Hide splash screen after a short delay to ensure app is ready
-    setTimeout(() => {
-      SplashScreen.hideAsync();
-    }, 100);
+    // Hide splash screen immediately - let the app handle loading
+    // The home/index.tsx will show its own loading screen if needed
+    SplashScreen.hideAsync();
   }, []);
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {/* Login screen */}
+      {/* Login screen - entry point */}
       <Stack.Screen 
         name="index" 
-        options={{ headerShown: false }}
+        options={{ 
+          headerShown: false
+        }}
       />
       
-      {/* Home screens (worker/contractor) */}
+      {/* Home screens with role-based routing */}
       <Stack.Screen 
         name="home" 
-        options={{ headerShown: false }}
-      />
-      
-      {/* Register screen */}
-      <Stack.Screen 
-        name="register" 
-        options={{ headerShown: false }}
+        options={{ 
+          headerShown: false
+        }}
       />
       
       {/* Other screens */}
+      <Stack.Screen name="register" options={{ headerShown: false }} />
       <Stack.Screen name="waiting" options={{ headerShown: false }} />
       <Stack.Screen name="verify-otp" options={{ headerShown: false }} />
       <Stack.Screen name="dashboard" options={{ headerShown: false }} />
