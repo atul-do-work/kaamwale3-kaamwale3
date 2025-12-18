@@ -37,5 +37,6 @@ export default function HomeIndex() {
   if (role === 'contractor') return <Redirect href="/home/contractor" />;
 
   // fallback
-  return <Redirect href="/" />;
+  // return <Redirect href="/" />;
+  return null;
 }

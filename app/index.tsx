@@ -101,14 +101,14 @@ export default function LoginScreen() {
       // ------------------------
       //  NAVIGATION BASED ON ROLE
       // ------------------------
-      console.log(`🚀 Navigating to /home/${data.user.role}`);
-      if (data.user.role === "worker") {
-        console.log("→ Routing to /home/worker");
-        router.replace("/home/worker");
-      } else {
-        console.log("→ Routing to /home/contractor");
-        router.replace("/home/contractor");
-      }
+      // console.log(`🚀 Navigating to /home/${data.user.role}`);
+      // if (data.user.role === "worker") {
+      //   console.log("→ Routing to /home/worker");
+      //   router.replace("/home/worker");
+      // } else {
+      //   console.log("→ Routing to /home/contractor");
+      //   router.replace("/home/contractor");
+      // }
     } catch (error) {
       console.error("Login error:", error);
       Alert.alert("Error", (error as Error).message || "Server not responding");
