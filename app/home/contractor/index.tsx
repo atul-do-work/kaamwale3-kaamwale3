@@ -92,44 +92,57 @@ export default function ContractorHome() {
               const cachedLeaderboard = await AsyncStorage.getItem('leaderboard');
               if (cachedLeaderboard) {
                 const leaderboardData = JSON.parse(cachedLeaderboard);
+                console.log('📊 Cached leaderboard data:', leaderboardData);
                 
-                // Set leaderboard from cache
-                const formattedLeaderboard = leaderboardData.leaderboard?.map((contractor: any) => ({
-                  id: contractor.contractorId,
+                // The data can come in two formats:
+                // 1. { leaderboard: [...], myRank, myScore, ... } (from login response)
+                // 2. Array directly (legacy format)
+                const boardData = Array.isArray(leaderboardData) ? leaderboardData : leaderboardData.leaderboard || [];
+                
+                const formattedLeaderboard = boardData.map((contractor: any) => ({
+                  id: contractor.contractorId || contractor._id || contractor.phone,
                   name: contractor.name,
-                  points: contractor.score,
+                  points: contractor.score || contractor.points || 0,
                   profile: contractor.profilePhoto ? contractor.profilePhoto : null,
                   rank: contractor.rank,
                   rating: contractor.avgRating,
                   jobsPosted: contractor.totalJobsPosted,
                   tier: contractor.tier,
-                })) || [];
+                }));
                 
+                console.log('✅ Formatted leaderboard:', formattedLeaderboard);
                 setLeaderboard(formattedLeaderboard);
               } else {
-                // Fallback: try old endpoint if no cached data
+                // Fallback: try city endpoint if no cached data
                 try {
-                  const leaderboardRes = await fetch(`${SERVER_URL}/leaderboard?limit=20`, {
-                    headers: { Authorization: `Bearer ${savedToken}` },
-                  });
+                  const leaderboardRes = await fetch(
+                    `${SERVER_URL}/leaderboard/city?latitude=${currentUser?.latitude || 0}&longitude=${currentUser?.longitude || 0}`,
+                    {
+                      headers: { Authorization: `Bearer ${savedToken}` },
+                    }
+                  );
                   const leaderboardData = await leaderboardRes.json();
                   
                   if (leaderboardData.leaderboard && Array.isArray(leaderboardData.leaderboard)) {
-                    const formattedLeaderboard = leaderboardData.leaderboard.map((user: any, index: number) => ({
-                      id: user._id || user.phone,
-                      name: user.name,
-                      points: user.points || 0,
-                      profile: user.profilePhoto ? user.profilePhoto : null,
-                      rank: index + 1
+                    const formattedLeaderboard = leaderboardData.leaderboard.map((contractor: any) => ({
+                      id: contractor.contractorId || contractor._id,
+                      name: contractor.name,
+                      points: contractor.score || 0,
+                      profile: contractor.profilePhoto ? contractor.profilePhoto : null,
+                      rank: contractor.rank,
+                      rating: contractor.avgRating,
+                      jobsPosted: contractor.totalJobsPosted,
+                      tier: contractor.tier,
                     }));
                     setLeaderboard(formattedLeaderboard);
+                    console.log('✅ Fetched leaderboard from API:', formattedLeaderboard);
                   }
                 } catch (err) {
-                  console.warn('Could not fetch leaderboard:');
+                  console.warn('Could not fetch leaderboard:', (err as Error).message);
                 }
               }
             } catch (err) {
-              // Silent fail on premium status check
+              console.warn('Error loading leaderboard:', (err as Error).message);
             }
             
             // Global socket already created at login
@@ -243,21 +256,27 @@ export default function ContractorHome() {
       if (cachedLeaderboard) {
         const leaderboardData = JSON.parse(cachedLeaderboard);
         
-        const formattedLeaderboard = leaderboardData.leaderboard?.map((contractor: any) => ({
-          id: contractor.contractorId,
+        // Support both data formats
+        const boardData = Array.isArray(leaderboardData) ? leaderboardData : leaderboardData.leaderboard || [];
+        
+        const formattedLeaderboard = boardData.map((contractor: any) => ({
+          id: contractor.contractorId || contractor._id || contractor.phone,
           name: contractor.name,
-          points: contractor.score,
+          points: contractor.score || contractor.points || 0,
           profile: contractor.profilePhoto ? { uri: contractor.profilePhoto } : userProfilePhoto,
           rank: contractor.rank,
           rating: contractor.avgRating,
           jobsPosted: contractor.totalJobsPosted,
           tier: contractor.tier,
-        })) || [];
+        }));
         
         setLeaderboard(formattedLeaderboard);
+        console.log('✅ Leaderboard loaded after premium purchase:', formattedLeaderboard);
+      } else {
+        console.warn('⚠️ No cached leaderboard found after premium purchase');
       }
     } catch (err) {
-      console.warn('Could not fetch leaderboard after plan selection:');
+      console.warn('Could not fetch leaderboard after plan selection:', (err as Error).message);
     }
   };
 

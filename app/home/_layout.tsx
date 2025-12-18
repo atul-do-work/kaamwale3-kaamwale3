@@ -66,11 +66,9 @@ export default function Layout() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {role === 'worker' ? (
-        <Stack.Screen name="worker/_layout" />
-      ) : (
-        <Stack.Screen name="contractor/_layout" />
-      )}
+      {/* Always register both layouts - Expo Router will use the correct one */}
+      <Stack.Screen name="worker/_layout" options={{ headerShown: false }} />
+      <Stack.Screen name="contractor/_layout" options={{ headerShown: false }} />
     </Stack>
   );
 }
