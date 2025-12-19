@@ -13,6 +13,7 @@ import { API_BASE } from '../utils/config';
 import { useRouter } from "expo-router";
 import * as Location from 'expo-location';
 import styles from "../styles/LoginScreenStyles";
+//*******************2nd step */
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -101,14 +102,10 @@ export default function LoginScreen() {
       // ------------------------
       //  NAVIGATION BASED ON ROLE
       // ------------------------
-      console.log(`🚀 Navigating to /home/${data.user.role}`);
-      if (data.user.role === "worker") {
-        console.log("→ Routing to /home/worker");
-        router.replace("/home/worker");
-      } else {
-        console.log("→ Routing to /home/contractor");
-        router.replace("/home/contractor");
-      }
+      console.log(`🚀 [Login] Navigating to /home after login`);
+      // Navigate to /home which will then redirect to /home/worker or /home/contractor
+      // Don't navigate directly - let home/index.tsx handle the role-based routing
+      router.replace("/home");
     } catch (error) {
       console.error("Login error:", error);
       Alert.alert("Error", (error as Error).message || "Server not responding");

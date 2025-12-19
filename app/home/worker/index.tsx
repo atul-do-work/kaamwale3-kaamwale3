@@ -105,6 +105,7 @@ const JobItem = memo(({ item, onAccept, onDecline, timer }: JobItemProps) => (
 
 // ---------------- WORKER HOME COMPONENT ----------------
 export default function WorkerHome() {
+  const [error, setError] = useState<string | null>(null);
   const [currentJob, setCurrentJob] = useState<Job | null>(null);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [handledJobs, setHandledJobs] = useState<Set<string>>(new Set<string>());
@@ -135,6 +136,16 @@ export default function WorkerHome() {
   useEffect(() => {
     currentJobRef.current = currentJob;
   }, [currentJob]);
+
+  // ✅ Error catching wrapper
+  useEffect(() => {
+    console.log("✅ WorkerHome component mounted");
+    
+    return () => {
+      console.log("🔄 WorkerHome component unmounting");
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
 
   // ✅ Check for user changes when screen comes into focus (no dependency on currentUserPhone to avoid stale closures)
   useFocusEffect(
@@ -715,6 +726,19 @@ export default function WorkerHome() {
 
   return (
     <View style={styles.container}>
+      {error && (
+        <View style={{ backgroundColor: '#ffebee', padding: 20, margin: 10, borderRadius: 8, borderLeftWidth: 4, borderLeftColor: '#e74c3c' }}>
+          <Text style={{ color: '#c62828', fontWeight: 'bold', marginBottom: 8 }}>⚠️ Error Loading Worker Home</Text>
+          <Text style={{ color: '#c62828', fontSize: 12 }}>{error}</Text>
+          <TouchableOpacity style={{ marginTop: 10, paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#e74c3c', borderRadius: 6 }} onPress={() => {
+            setError(null);
+            window.location.reload?.();
+          }}>
+            <Text style={{ color: '#fff', fontWeight: '600', textAlign: 'center' }}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      
       {/* Header with Notification Bell & Online Toggle */}
       <View style={styles.headerContainer}>
         <View>

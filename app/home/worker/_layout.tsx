@@ -13,6 +13,7 @@ export default function WorkerLayout() {
         tabBarActiveTintColor: '#007AFF',
         tabBarInactiveTintColor: 'gray',
       }}
+      initialRouteName="index"
     >
       <Tabs.Screen
         name="index"

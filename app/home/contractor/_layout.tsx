@@ -15,6 +15,7 @@ export default function ContractorLayout() {
           paddingBottom: 6,
         },
       }}
+      initialRouteName="index"
     >
       <Tabs.Screen
         name="index"
