@@ -1,4 +1,4 @@
-import React, { useEffect, useState, memo, useRef } from "react";
+import React, { useEffect, useState, memo, useRef, ErrorInfo } from "react";
 import {
   View,
   ScrollView,
@@ -22,6 +22,48 @@ import { API_BASE } from "../../../utils/config";
 
 const WORKER_NAME_FALLBACK = "Test Worker";
 const AUTO_DECLINE_SECONDS = 30;
+
+// ============= ERROR BOUNDARY CLASS =============
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("🔴 ERROR BOUNDARY CAUGHT:", error);
+    console.error("Component Stack:", errorInfo.componentStack);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: '#fff' }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#e74c3c', marginBottom: 10 }}>⚠️ Something went wrong</Text>
+          <Text style={{ fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 20 }}>
+            {this.state.error?.message || 'Unknown error'}
+          </Text>
+          <TouchableOpacity
+            style={{ paddingVertical: 10, paddingHorizontal: 20, backgroundColor: '#3498db', borderRadius: 8 }}
+            onPress={() => this.setState({ hasError: false, error: null })}
+          >
+            <Text style={{ color: '#fff', fontWeight: '600' }}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 
 interface Job {
   _id: string; // ✅ MongoDB ObjectId
@@ -104,7 +146,7 @@ const JobItem = memo(({ item, onAccept, onDecline, timer }: JobItemProps) => (
 ));
 
 // ---------------- WORKER HOME COMPONENT ----------------
-export default function WorkerHome() {
+function WorkerHome() {
   const [error, setError] = useState<string | null>(null);
   const [currentJob, setCurrentJob] = useState<Job | null>(null);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lon: number } | null>(null);
@@ -193,6 +235,8 @@ export default function WorkerHome() {
   useEffect(() => {
     (async () => {
       try {
+        console.log("[WorkerHome] Loading worker data and connecting socket...");
+        
         const userStr = await AsyncStorage.getItem("user");
         const storedToken = await AsyncStorage.getItem("token");
 
@@ -236,13 +280,19 @@ export default function WorkerHome() {
 
           // AUTO-REGISTER: Get location and register worker automatically
           try {
+            console.log("[WorkerHome] Requesting location permission...");
             const { status } = await Location.requestForegroundPermissionsAsync();
+            console.log(`[WorkerHome] Location permission status: ${status}`);
+            
             if (status === "granted") {
+              console.log("[WorkerHome] Getting current position...");
               const loc = await Location.getCurrentPositionAsync({});
               const lat = loc.coords.latitude;
               const lon = loc.coords.longitude;
+              console.log(`[WorkerHome] Got location: ${lat}, ${lon}`);
 
               // Register worker with backend
+              console.log("[WorkerHome] Emitting registerWorker event...");
               socket.emit("registerWorker", {
                 lat,
                 lon,
@@ -251,17 +301,24 @@ export default function WorkerHome() {
 
               console.log("✅ Worker auto-registered with location:", { lat, lon });
               setCurrentLocation({ lat, lon });
+            } else {
+              console.warn("⚠️ Location permission denied");
             }
           } catch (locationErr) {
-            console.warn("⚠️ Failed to get location:", locationErr);
+            console.error("❌ Failed to get location:", locationErr);
+            const errMsg = locationErr instanceof Error ? locationErr.message : String(locationErr);
+            setError(`Location error: ${errMsg}`);
           }
         } else {
           console.warn("⚠️ No token found in AsyncStorage");
+          setError("No authentication token found");
         }
 
         console.log("🔑 LOADED TOKEN:", storedToken);
       } catch (err) {
         console.error("❌ Failed to load user:", err);
+        const errMsg = err instanceof Error ? err.message : String(err);
+        setError(`Failed to load user: ${errMsg}`);
       }
     })();
   }, []);
@@ -306,70 +363,94 @@ export default function WorkerHome() {
 
     // Listen for new jobs
     const handleNewJob = async (data: any) => {
-      console.log("📩 SOCKET: New job received", data);
-      if (!currentLocation) return;
+      try {
+        console.log("📩 SOCKET: New job received", data);
+        if (!currentLocation) return;
 
-      const location = await getAddressFromCoords(data.lat, data.lon);
+        const location = await getAddressFromCoords(data.lat, data.lon);
 
-      const normalizedJob: Job = {
-        ...data,
-        location,
-        attendanceStatus: null,
-        paymentStatus: null,
-        timestamp: new Date().toISOString(),
-      };
+        const normalizedJob: Job = {
+          ...data,
+          location,
+          attendanceStatus: null,
+          paymentStatus: null,
+          timestamp: new Date().toISOString(),
+        };
 
-      setCurrentJob(normalizedJob);
-      stopLocationTracking(); // Stop tracking until job accepted
-      startTimer();
+        setCurrentJob(normalizedJob);
+        stopLocationTracking(); // Stop tracking until job accepted
+        startTimer();
 
-      Alert.alert("New Job Available", data.title);
+        Alert.alert("New Job Available", data.title);
+      } catch (err) {
+        console.error("❌ Error handling new job:", err);
+        const errMsg = err instanceof Error ? err.message : String(err);
+        setError(`Error handling new job: ${errMsg}`);
+      }
     };
 
     // Listen for job updates (e.g., payment done, attendance marked)
     const handleJobUpdated = (data: any) => {
-      console.log("📩 SOCKET: Job updated", data);
-      
-      // If job is paid OR attendance marked → stop location tracking
-      if (data.paymentStatus === "Paid" || data.attendanceStatus) {
-        stopLocationTracking();
-        console.log("✅ Location tracking stopped: Job paid or attendance marked");
-      }
-      // If job accepted but not paid and no attendance → start tracking
-      else if (data.acceptedBy && !data.paymentStatus && !data.attendanceStatus) {
-        startLocationTracking();
-        console.log("📍 Location tracking started: Job accepted");
-      }
+      try {
+        console.log("📩 SOCKET: Job updated", data);
+        
+        // If job is paid OR attendance marked → stop location tracking
+        if (data.paymentStatus === "Paid" || data.attendanceStatus) {
+          stopLocationTracking();
+          console.log("✅ Location tracking stopped: Job paid or attendance marked");
+        }
+        // If job accepted but not paid and no attendance → start tracking
+        else if (data.acceptedBy && !data.paymentStatus && !data.attendanceStatus) {
+          startLocationTracking();
+          console.log("📍 Location tracking started: Job accepted");
+        }
 
-      // Recalculate metrics when job updates
-      console.log("📊 Job updated via socket, recalculating metrics");
-      calculateMetrics();
-      fetchNotificationCount();
+        // Recalculate metrics when job updates
+        console.log("📊 Job updated via socket, recalculating metrics");
+        calculateMetrics();
+        fetchNotificationCount();
+      } catch (err) {
+        console.error("❌ Error handling job update:", err);
+        const errMsg = err instanceof Error ? err.message : String(err);
+        setError(`Error handling job update: ${errMsg}`);
+      }
     };
 
     const handleJobAccepted = (data: any) => {
-      console.log("📩 SOCKET: job accepted event", data);
-      startLocationTracking(); // Start tracking when accepted
+      try {
+        console.log("📩 SOCKET: job accepted event", data);
+        startLocationTracking(); // Start tracking when accepted
+      } catch (err) {
+        console.error("❌ Error handling job accepted:", err);
+        const errMsg = err instanceof Error ? err.message : String(err);
+        setError(`Error handling job accepted: ${errMsg}`);
+      }
     };
 
     const handleJobCancelled = (data: any) => {
-      console.log("📩 SOCKET: job cancelled event received", data);
-      
-      // Get IDs as strings for comparison
-      const cancelledJobId = String(data._id || data.id || '').trim();
-      const currentJobId = String(currentJob?._id || currentJob?.id || '').trim();
-      
-      console.log(`📍 Comparing cancelled jobId: "${cancelledJobId}" vs current jobId: "${currentJobId}"`);
-      
-      // If current job is cancelled, clear it
-      if (currentJobId && cancelledJobId && cancelledJobId === currentJobId) {
-        console.log("❌ Current job was cancelled, clearing from view");
-        setCurrentJob(null);
-        Alert.alert("Job Cancelled", "The job you were viewing has been cancelled by the contractor.");
-      } else if (currentJobId && cancelledJobId) {
-        console.log(`❌ Job ${cancelledJobId} was cancelled but it's not the current job ${currentJobId}`);
-      } else {
-        console.log("⚠️ Cannot determine job IDs for cancellation", { cancelledJobId, currentJobId });
+      try {
+        console.log("📩 SOCKET: job cancelled event received", data);
+        
+        // Get IDs as strings for comparison
+        const cancelledJobId = String(data._id || data.id || '').trim();
+        const currentJobId = String(currentJob?._id || currentJob?.id || '').trim();
+        
+        console.log(`📍 Comparing cancelled jobId: "${cancelledJobId}" vs current jobId: "${currentJobId}"`);
+        
+        // If current job is cancelled, clear it
+        if (currentJobId && cancelledJobId && cancelledJobId === currentJobId) {
+          console.log("❌ Current job was cancelled, clearing from view");
+          setCurrentJob(null);
+          Alert.alert("Job Cancelled", "The job you were viewing has been cancelled by the contractor.");
+        } else if (currentJobId && cancelledJobId) {
+          console.log(`❌ Job ${cancelledJobId} was cancelled but it's not the current job ${currentJobId}`);
+        } else {
+          console.log("⚠️ Cannot determine job IDs for cancellation", { cancelledJobId, currentJobId });
+        }
+      } catch (err) {
+        console.error("❌ Error handling job cancelled:", err);
+        const errMsg = err instanceof Error ? err.message : String(err);
+        setError(`Error handling job cancelled: ${errMsg}`);
       }
     };
 
@@ -732,15 +813,16 @@ export default function WorkerHome() {
           <Text style={{ color: '#c62828', fontSize: 12 }}>{error}</Text>
           <TouchableOpacity style={{ marginTop: 10, paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#e74c3c', borderRadius: 6 }} onPress={() => {
             setError(null);
-            window.location.reload?.();
           }}>
             <Text style={{ color: '#fff', fontWeight: '600', textAlign: 'center' }}>Retry</Text>
           </TouchableOpacity>
         </View>
       )}
       
-      {/* Header with Notification Bell & Online Toggle */}
-      <View style={styles.headerContainer}>
+      {error ? null : (
+        <>
+          {/* Header with Notification Bell & Online Toggle */}
+          <View style={styles.headerContainer}>
         <View>
           <Text style={styles.dashboardText}>Dashboard</Text>
           <Text style={styles.greetingText}>Good Morning, {workerName}</Text>
@@ -898,7 +980,18 @@ export default function WorkerHome() {
         pendingOffers={0}
         activeBonuses={0}
       />
+        </>
+      )}
     </View>
+  );
+}
+
+// ============= EXPORT WITH ERROR BOUNDARY =============
+export default function WorkerHomeWithErrorBoundary() {
+  return (
+    <ErrorBoundary>
+      <WorkerHome />
+    </ErrorBoundary>
   );
 }
 
