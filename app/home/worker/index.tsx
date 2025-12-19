@@ -25,21 +25,24 @@ const AUTO_DECLINE_SECONDS = 30;
 
 // ============= ERROR BOUNDARY CLASS =============
 class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
+  { children: React.ReactNode; onError?: (error: Error) => void },
   { hasError: boolean; error: Error | null }
 > {
-  constructor(props: { children: React.ReactNode }) {
+  constructor(props: { children: React.ReactNode; onError?: (error: Error) => void }) {
     super(props);
     this.state = { hasError: false, error: null };
   }
 
   static getDerivedStateFromError(error: Error) {
+    console.error("🔴 ERROR BOUNDARY CAUGHT ERROR:", error.message);
+    console.error("Stack:", error.stack);
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("🔴 ERROR BOUNDARY CAUGHT:", error);
+    console.error("🔴 ERROR BOUNDARY DID CATCH:", error);
     console.error("Component Stack:", errorInfo.componentStack);
+    this.props.onError?.(error);
   }
 
   render() {
@@ -47,7 +50,7 @@ class ErrorBoundary extends React.Component<
       return (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: '#fff' }}>
           <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#e74c3c', marginBottom: 10 }}>⚠️ Something went wrong</Text>
-          <Text style={{ fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 20 }}>
+          <Text style={{ fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 20, fontFamily: 'monospace' }}>
             {this.state.error?.message || 'Unknown error'}
           </Text>
           <TouchableOpacity
@@ -281,33 +284,55 @@ function WorkerHome() {
           // AUTO-REGISTER: Get location and register worker automatically
           try {
             console.log("[WorkerHome] Requesting location permission...");
-            const { status } = await Location.requestForegroundPermissionsAsync();
+            
+            // Request permission with explicit error handling
+            let permResponse;
+            try {
+              permResponse = await Location.requestForegroundPermissionsAsync();
+              console.log(`[WorkerHome] Permission response:`, permResponse);
+            } catch (permErr) {
+              console.error("❌ Permission request failed:", permErr);
+              const errMsg = permErr instanceof Error ? permErr.message : String(permErr);
+              console.error("Permission error message:", errMsg);
+              throw new Error(`Permission request failed: ${errMsg}`);
+            }
+            
+            const { status } = permResponse;
             console.log(`[WorkerHome] Location permission status: ${status}`);
             
             if (status === "granted") {
               console.log("[WorkerHome] Getting current position...");
-              const loc = await Location.getCurrentPositionAsync({});
-              const lat = loc.coords.latitude;
-              const lon = loc.coords.longitude;
-              console.log(`[WorkerHome] Got location: ${lat}, ${lon}`);
+              try {
+                const loc = await Location.getCurrentPositionAsync({});
+                const lat = loc.coords.latitude;
+                const lon = loc.coords.longitude;
+                console.log(`[WorkerHome] Got location: lat=${lat}, lon=${lon}`);
 
-              // Register worker with backend
-              console.log("[WorkerHome] Emitting registerWorker event...");
-              socket.emit("registerWorker", {
-                lat,
-                lon,
-                workerType: "General",
-              });
+                // Register worker with backend
+                console.log("[WorkerHome] Emitting registerWorker event...");
+                socket.emit("registerWorker", {
+                  lat,
+                  lon,
+                  workerType: "General",
+                });
 
-              console.log("✅ Worker auto-registered with location:", { lat, lon });
-              setCurrentLocation({ lat, lon });
+                console.log("✅ Worker auto-registered with location:", { lat, lon });
+                setCurrentLocation({ lat, lon });
+              } catch (posErr) {
+                console.error("❌ Failed to get position:", posErr);
+                const errMsg = posErr instanceof Error ? posErr.message : String(posErr);
+                throw new Error(`Failed to get position: ${errMsg}`);
+              }
             } else {
-              console.warn("⚠️ Location permission denied");
+              console.warn("⚠️ Location permission denied, status:", status);
+              throw new Error(`Location permission denied: ${status}`);
             }
           } catch (locationErr) {
-            console.error("❌ Failed to get location:", locationErr);
+            console.error("❌ Location error caught:", locationErr);
             const errMsg = locationErr instanceof Error ? locationErr.message : String(locationErr);
-            setError(`Location error: ${errMsg}`);
+            console.error("Full error:", errMsg);
+            // Don't set error yet - allow app to continue but log the issue
+            console.warn("⚠️ Continuing without location, user may not receive jobs");
           }
         } else {
           console.warn("⚠️ No token found in AsyncStorage");
@@ -459,12 +484,47 @@ function WorkerHome() {
     socket.on("jobAccepted", handleJobAccepted);
     socket.on("jobCancelled", handleJobCancelled);
 
+    // ✅ Add socket event handlers for debugging
+    const handleConnect = () => {
+      console.log("✅ Socket connected successfully, ID:", socket.id);
+    };
+
+    socket.on("connect", handleConnect);
+
+    // ✅ Add socket error handlers
+    socket.on("connect_error", (error) => {
+      console.error("❌ Socket connect error:", error);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      setError(`Socket connection error: ${errMsg}`);
+    });
+
+    socket.on("disconnect", (reason) => {
+      console.log("🔌 Socket disconnected:", reason);
+      if (reason === "io server disconnect" || reason === "transport close") {
+        console.warn("⚠️ Server disconnected, will attempt to reconnect");
+      }
+    });
+
+    socket.on("error", (error) => {
+      console.error("❌ Socket error event:", error);
+      const errMsg = typeof error === "string" ? error : error?.message || String(error);
+      console.error("Socket error message:", errMsg);
+      // Only set error if it's severe
+      if (error?.message?.includes("auth")) {
+        setError(`Authentication error: ${errMsg}`);
+      }
+    });
+
     return () => {
       stopLocationTracking();
       socket.off("newJob", handleNewJob);
       socket.off("jobUpdated", handleJobUpdated);
       socket.off("jobAccepted", handleJobAccepted);
       socket.off("jobCancelled", handleJobCancelled);
+      socket.off("connect", handleConnect);
+      socket.off("connect_error");
+      socket.off("disconnect");
+      socket.off("error");
       console.log("[WorkerHome] job listeners removed (unmounted)");
     };
   }, [currentLocation, workerName, currentJob]);
