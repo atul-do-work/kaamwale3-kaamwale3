@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Animated, Easing, StyleProp, ViewStyle } from 'react-native';
-import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView from 'react-native-maps';
 import * as Location from 'expo-location';
 import { FontAwesome5 } from '@expo/vector-icons'; // 👈 add this
 import styles from '../styles/WorkerMapStyles';
@@ -51,7 +51,6 @@ export default function WorkerMap({ style }: Props) {
   return (
     <View style={styles.mapContainer}>
       <MapView
-        provider={PROVIDER_GOOGLE}
         style={[styles.map, style]}
         showsUserLocation={true}
         showsMyLocationButton={true}
