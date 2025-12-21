@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Modal, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import MapView, { Marker, Polyline } from 'react-native-maps';
+import MapLibreGL from '@maplibre/maplibre-react-native';
 import * as Location from 'expo-location';
 import * as Linking from 'expo-linking';
+
+const MAP_STYLE = 'https://demotiles.maplibre.org/style.json';
 
 // Distance calculation using Haversine formula
 function getDistanceFromLatLonInKm(
@@ -106,13 +108,13 @@ export default function JobLocationMap({
     })();
   }, [visible]);
 
-  const handleOpenGoogleMaps = () => {
+  const handleOpenMapbox = () => {
     if (!currentLocation) return;
 
-    // Google Maps URL for navigation
+    // Open in Google Maps
     const url = `https://www.google.com/maps/dir/?api=1&origin=${currentLocation.latitude},${currentLocation.longitude}&destination=${jobLat},${jobLon}`;
     Linking.openURL(url).catch(() => {
-      Alert.alert('Error', 'Could not open Google Maps');
+      Alert.alert('Error', 'Could not open Maps');
     });
   };
 
@@ -152,21 +154,22 @@ export default function JobLocationMap({
 
         {/* Map */}
         {currentLocation && (
-          <MapView
+          <MapLibreGL.MapView
             style={{ flex: 1 }}
-            initialRegion={{
-              latitude: (currentLocation.latitude + jobLat) / 2,
-              longitude: (currentLocation.longitude + jobLon) / 2,
-              latitudeDelta: Math.abs(currentLocation.latitude - jobLat) + 0.05,
-              longitudeDelta: Math.abs(currentLocation.longitude - jobLon) + 0.05,
-            }}
           >
+            <MapLibreGL.Camera
+              centerCoordinate={[
+                (currentLocation.longitude + jobLon) / 2,
+                (currentLocation.latitude + jobLat) / 2,
+              ]}
+              zoomLevel={13}
+              animationDuration={500}
+            />
+
             {/* Worker Location Marker */}
-            <Marker
-              coordinate={currentLocation}
-              title="Your Location"
-              description={currentLocationName}
-              pinColor="#2196F3"
+            <MapLibreGL.PointAnnotation
+              id="worker-location"
+              coordinate={[currentLocation.longitude, currentLocation.latitude]}
             >
               <View style={{ 
                 width: 40, 
@@ -177,17 +180,13 @@ export default function JobLocationMap({
                 alignItems: 'center',
                 borderWidth: 3,
                 borderColor: '#fff'
-              }}>
-                <MaterialIcons name="my-location" size={20} color="#fff" />
-              </View>
-            </Marker>
+              }} />
+            </MapLibreGL.PointAnnotation>
 
             {/* Job Location Marker */}
-            <Marker
-              coordinate={{ latitude: jobLat, longitude: jobLon }}
-              title={jobTitle}
-              description={jobLocationName}
-              pinColor="#FF6B6B"
+            <MapLibreGL.PointAnnotation
+              id="job-location"
+              coordinate={[jobLon, jobLat]}
             >
               <View style={{ 
                 width: 40, 
@@ -198,21 +197,34 @@ export default function JobLocationMap({
                 alignItems: 'center',
                 borderWidth: 3,
                 borderColor: '#fff'
-              }}>
-                <MaterialIcons name="location-on" size={20} color="#fff" />
-              </View>
-            </Marker>
+              }} />
+            </MapLibreGL.PointAnnotation>
 
             {/* Route Line */}
-            <Polyline
-              coordinates={[
-                { latitude: currentLocation.latitude, longitude: currentLocation.longitude },
-                { latitude: jobLat, longitude: jobLon },
-              ]}
-              strokeColor="#667eea"
-              strokeWidth={3}
-            />
-          </MapView>
+            <MapLibreGL.ShapeSource
+              id="route-source"
+              shape={{
+                type: 'Feature',
+                properties: {},
+                geometry: {
+                  type: 'LineString',
+                  coordinates: [
+                    [currentLocation.longitude, currentLocation.latitude],
+                    [jobLon, jobLat],
+                  ],
+                },
+              }}
+            >
+              <MapLibreGL.LineLayer
+                id="route-line"
+                style={{
+                  lineColor: '#667eea',
+                  lineWidth: 3,
+                  lineOpacity: 0.7,
+                }}
+              />
+            </MapLibreGL.ShapeSource>
+          </MapLibreGL.MapView>
         )}
 
         {/* Bottom Info Card */}
@@ -256,7 +268,7 @@ export default function JobLocationMap({
 
           {/* Open Maps Button */}
           <TouchableOpacity 
-            onPress={handleOpenGoogleMaps}
+            onPress={handleOpenMapbox}
             style={{ 
               backgroundColor: '#667eea',
               paddingVertical: 14,
@@ -268,7 +280,7 @@ export default function JobLocationMap({
           >
             <MaterialIcons name="directions" size={20} color="#fff" />
             <Text style={{ color: '#fff', fontWeight: '700', marginLeft: 8, fontSize: 16 }}>
-              Open in Google Maps
+              Get Directions
             </Text>
           </TouchableOpacity>
         </View>
