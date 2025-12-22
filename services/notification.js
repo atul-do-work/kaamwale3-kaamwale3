@@ -1,5 +1,4 @@
 import * as Notifications from 'expo-notifications';
-import * as Permissions from 'expo-permissions';
 import { Platform } from 'react-native';
 
 export async function registerForPushNotificationsAsync() {
@@ -12,13 +11,28 @@ export async function registerForPushNotificationsAsync() {
       lightColor: '#FF231F7C',
     });
   }
-  const { status: existingStatus } = await Permissions.getAsync(Permissions.NOTIFICATIONS);
+  
+  // ✅ Request permission to send notifications
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
+  
   if (existingStatus !== 'granted') {
-    const { status } = await Permissions.askAsync(Permissions.NOTIFICATIONS);
+    const { status } = await Notifications.requestPermissionsAsync();
     finalStatus = status;
   }
-  if (finalStatus !== 'granted') return;
-  token = (await Notifications.getExpoPushTokenAsync()).data;
-  return token;
+  
+  if (finalStatus !== 'granted') {
+    console.warn('⚠️ Notification permissions not granted');
+    return null;
+  }
+  
+  // ✅ Get the Expo push token
+  try {
+    token = (await Notifications.getExpoPushTokenAsync()).data;
+    console.log('✅ FCM Token received:', token);
+    return token;
+  } catch (err) {
+    console.error('❌ Failed to get FCM token:', err);
+    return null;
+  }
 }
