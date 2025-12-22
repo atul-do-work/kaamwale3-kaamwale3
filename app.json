@@ -7,6 +7,7 @@
     "scheme": "kaamwale3",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.atulsharma897438.kaamwale3",
@@ -14,46 +15,50 @@
         "ITSAppUsesNonExemptEncryption": false
       }
     },
+
     "android": {
+      "package": "com.atulsharma897438.kaamwale3",
+      "permissions": ["INTERNET"],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
-      "package": "com.atulsharma897438.kaamwale3"
+      "googleServicesFile": "./google-services.json"
     },
-    "web": {
-      "output": "static",
-      "favicon": "./assets/splash.png"
-    },
+
     "plugins": [
       "expo-router",
       "@maplibre/maplibre-react-native",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#667eea",
+          "sounds": ["./assets/notification.wav"]
+        }
+      ],
+      "expo-web-browser",
       [
         "expo-splash-screen",
         {
           "image": "./assets/splash.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
-          "dark": {
-            "backgroundColor": "#000000"
-          }
+          "backgroundColor": "#ffffff"
         }
-      ],
-      "expo-web-browser",
-      "@maplibre/maplibre-react-native"
+      ]
     ],
+
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
     },
+
     "extra": {
-      "router": {},
       "eas": {
         "projectId": "8a6c9f14-6f97-4d37-8daf-a8e8a86487cb"
       }
     },
+
     "owner": "atul-dowork"
   }
 }
