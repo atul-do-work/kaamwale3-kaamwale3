@@ -313,6 +313,42 @@ export default function GigHistory() {
         </TouchableOpacity>
       </View>
 
+      {/* Status Overview Cards */}
+      <View style={styles.statusCardsContainer}>
+        <TouchableOpacity
+          style={[styles.statusCard, styles.completedCard, filter === 'completed' && styles.statusCardActive]}
+          onPress={() => setFilter('completed')}
+        >
+          <View style={styles.statusCardContent}>
+            <MaterialIcons name="check-circle" size={24} color="#27AE60" />
+            <Text style={styles.statusCardValue}>{gigs.filter(g => g.paymentStatus === 'Paid').length}</Text>
+            <Text style={styles.statusCardLabel}>Completed</Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.statusCard, styles.pendingCard, filter === 'pending' && styles.statusCardActive]}
+          onPress={() => setFilter('pending')}
+        >
+          <View style={styles.statusCardContent}>
+            <MaterialIcons name="schedule" size={24} color="#F39C12" />
+            <Text style={styles.statusCardValue}>{gigs.filter(g => g.paymentStatus !== 'Paid' && g.status !== 'cancelled').length}</Text>
+            <Text style={styles.statusCardLabel}>Pending</Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.statusCard, styles.cancelledCard, filter === 'cancelled' && styles.statusCardActive]}
+          onPress={() => setFilter('cancelled')}
+        >
+          <View style={styles.statusCardContent}>
+            <MaterialIcons name="cancel" size={24} color="#E74C3C" />
+            <Text style={styles.statusCardValue}>{gigs.filter(g => g.status === 'cancelled').length}</Text>
+            <Text style={styles.statusCardLabel}>Cancelled</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
       {/* Filter Tabs */}
       <ScrollView
         horizontal
@@ -763,5 +799,53 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 13,
+  },
+  // Status Cards Styles
+  statusCardsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    gap: 10,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  statusCard: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  statusCardActive: {
+    borderColor: '#3498db',
+    backgroundColor: '#E8F4F8',
+  },
+  completedCard: {
+    backgroundColor: '#F0FDF4',
+  },
+  pendingCard: {
+    backgroundColor: '#FEF8E8',
+  },
+  cancelledCard: {
+    backgroundColor: '#FEF2F2',
+  },
+  statusCardContent: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  statusCardValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000',
+    marginTop: 2,
+  },
+  statusCardLabel: {
+    fontSize: 11,
+    color: '#666',
+    fontWeight: '500',
+    marginTop: 2,
   },
 });

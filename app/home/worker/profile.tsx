@@ -17,11 +17,15 @@ import { useRouter } from "expo-router";
 import axios from "axios";
 import { API_BASE } from "../../../utils/config";
 import { clearAllUserData } from "../../../utils/socket";
+import ReferralModal from "../../../components/ReferralModal";
 
 export default function Profile(): React.ReactElement {
   const [userName, setUserName] = useState<string>("Worker");
   const [workerId, setWorkerId] = useState<string>("0000");
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [referralModalVisible, setReferralModalVisible] = useState(false);
+  const [workerName, setWorkerName] = useState<string>("");
+  const [workerPhone, setWorkerPhone] = useState<string>("");
   const router = useRouter();
 
   // Use central API base
@@ -36,6 +40,8 @@ export default function Profile(): React.ReactElement {
           const parsed = JSON.parse(userStr);
           setUserName(parsed.name || "Worker");
           setWorkerId(parsed.phone || "0000");
+          setWorkerName(parsed.name || "Worker");
+          setWorkerPhone(parsed.phone || "0000");
         }
 
         if (profileStr) setProfilePhoto(profileStr);
@@ -205,13 +211,17 @@ export default function Profile(): React.ReactElement {
         ))}
       </View>
 
-      <View style={styles.referralContainer}>
+      <TouchableOpacity 
+        style={styles.referralContainer}
+        onPress={() => setReferralModalVisible(true)}
+        activeOpacity={0.7}
+      >
         <View>
           <Text style={styles.referralHeading}>Referral Bonus</Text>
           <Text style={styles.referralText}>You have earned ₹500 from referrals</Text>
         </View>
         <MaterialIcons name="card-giftcard" size={40} color="#1a2f4d" />
-      </View>
+      </TouchableOpacity>
 
       {infoCards.map((card, index) => (
         <View key={index} style={styles.supportContainer}>
@@ -237,6 +247,13 @@ export default function Profile(): React.ReactElement {
         <MaterialIcons name="logout" size={22} color="#fff" />
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
+
+      <ReferralModal
+        visible={referralModalVisible}
+        onClose={() => setReferralModalVisible(false)}
+        workerName={workerName}
+        workerPhone={workerPhone}
+      />
     </ScrollView>
   );
 }
