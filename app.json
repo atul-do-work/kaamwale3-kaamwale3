@@ -19,6 +19,7 @@
     "android": {
       "package": "com.atulsharma897438.kaamwale3",
       "permissions": ["INTERNET"],
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE"
       }

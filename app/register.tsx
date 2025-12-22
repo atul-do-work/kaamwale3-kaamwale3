@@ -27,14 +27,22 @@ export default function Register() {
     try {
       // ✅ GET FCM TOKEN BEFORE REGISTRATION
       let fcmToken = null;
+      console.log('📋 Starting registration process...');
+      
       try {
+        console.log('🔔 Requesting FCM token...');
         fcmToken = await registerForPushNotificationsAsync();
-        console.log('📱 FCM Token obtained:', fcmToken);
+        if (fcmToken) {
+          console.log('✅ FCM Token obtained successfully:', fcmToken.substring(0, 30) + '...');
+        } else {
+          console.log('⚠️ FCM Token is null - user may have denied permissions');
+        }
       } catch (err) {
         console.warn('⚠️ Could not get FCM token:', err);
         // Continue without token - OTP will use console fallback
       }
 
+      console.log('📤 Sending registration request...');
       const res = await fetch(`${API_BASE}/users/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -44,15 +52,18 @@ export default function Register() {
       const data = await res.json();
 
       if (data.success) {
+        console.log('✅ Registration successful');
         // Save user locally for convenience
         await AsyncStorage.setItem('user', JSON.stringify(data.user));
         if (fcmToken) {
           await AsyncStorage.setItem('fcmToken', fcmToken);
+          console.log('💾 FCM Token saved to AsyncStorage');
         }
 
         // ✅ REQUEST OTP WITH FCM TOKEN
+        console.log('📨 Requesting OTP with FCM token...');
         try {
-          await fetch(`${API_BASE}/auth/request-otp`, {
+          const otpRes = await fetch(`${API_BASE}/auth/request-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -62,17 +73,28 @@ export default function Register() {
               fcmToken  // ✅ SEND FCM TOKEN HERE
             }),
           });
+          
+          const otpData = await otpRes.json();
+          console.log('✅ OTP Request response:', otpData.message);
         } catch (e) {
           console.warn('Failed to request OTP:', e);
         }
 
-        Alert.alert('Success', 'Registration completed! OTP sent to your phone');
+        let successMessage = 'Registration completed! ';
+        if (fcmToken) {
+          successMessage += 'OTP sent to your phone via notification.';
+        } else {
+          successMessage += 'Check server console for OTP (no FCM token).';
+        }
+        
+        Alert.alert('Success', successMessage);
         // Navigate to OTP verification screen so user can enter code and complete sign-in
         router.push('/verify-otp');
       } else {
         Alert.alert('Error', data.message || 'Registration failed');
       }
     } catch (err) {
+      console.error('Registration error:', err);
       Alert.alert('Error', 'Server not responding');
     }
   };
