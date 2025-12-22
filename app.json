@@ -21,21 +21,13 @@
       "permissions": ["INTERNET"],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE"
-      },
-      "googleServicesFile": "./google-services.json"
+      }
     },
 
     "plugins": [
       "expo-router",
       "@maplibre/maplibre-react-native",
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/icon.png",
-          "color": "#667eea",
-          "sounds": ["./assets/notification.wav"]
-        }
-      ],
+      "expo-notifications",
       "expo-web-browser",
       [
         "expo-splash-screen",

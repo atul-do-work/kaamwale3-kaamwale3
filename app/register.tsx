@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, StatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Notifications from 'expo-notifications';
 import { API_BASE } from '../utils/config';
 import styles from '../styles/RegisterScreenStyles';
+import { registerForPushNotificationsAsync } from '../services/notification'; // ✅ Import FCM service
 
 type User = {
   name: string;
@@ -19,27 +19,22 @@ export default function Register() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'worker' | 'contractor'>('worker');
-  const [fcmToken, setFcmToken] = useState<string | null>(null);
-
-  // Get FCM token when component mounts
-  useEffect(() => {
-    (async () => {
-      try {
-        const token = (await Notifications.getExpoPushTokenAsync()).data;
-        setFcmToken(token);
-        console.log('📱 FCM Token:', token);
-        await AsyncStorage.setItem('fcmToken', token);
-      } catch (err) {
-        console.warn('⚠️ Failed to get FCM token:', err);
-      }
-    })();
-  }, []);
 
   const handleRegister = async () => {
     if (!name || !phone || !password)
       return Alert.alert('Error', 'Fill all fields');
 
     try {
+      // ✅ GET FCM TOKEN BEFORE REGISTRATION
+      let fcmToken = null;
+      try {
+        fcmToken = await registerForPushNotificationsAsync();
+        console.log('📱 FCM Token obtained:', fcmToken);
+      } catch (err) {
+        console.warn('⚠️ Could not get FCM token:', err);
+        // Continue without token - OTP will use console fallback
+      }
+
       const res = await fetch(`${API_BASE}/users/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -51,13 +46,21 @@ export default function Register() {
       if (data.success) {
         // Save user locally for convenience
         await AsyncStorage.setItem('user', JSON.stringify(data.user));
+        if (fcmToken) {
+          await AsyncStorage.setItem('fcmToken', fcmToken);
+        }
 
-        // Request OTP with FCM token so it gets sent via push notification
+        // ✅ REQUEST OTP WITH FCM TOKEN
         try {
           await fetch(`${API_BASE}/auth/request-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone, name, role, fcmToken }),
+            body: JSON.stringify({ 
+              phone, 
+              name, 
+              role,
+              fcmToken  // ✅ SEND FCM TOKEN HERE
+            }),
           });
         } catch (e) {
           console.warn('Failed to request OTP:', e);

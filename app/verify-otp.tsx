@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, StatusBar, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
 import { API_BASE } from '../utils/config';
 import styles from '../styles/LoginScreenStyles';
@@ -11,7 +10,6 @@ export default function VerifyOtpScreen() {
   const [phone, setPhone] = useState<string>('');
   const [otp, setOtp] = useState<string>('');
   const [loading, setLoading] = useState(false);
-  const [fcmToken, setFcmToken] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -21,12 +19,8 @@ export default function VerifyOtpScreen() {
           const user = JSON.parse(userStr);
           if (user?.phone) setPhone(user.phone);
         }
-
-        // Get FCM token
-        const token = (await Notifications.getExpoPushTokenAsync()).data;
-        setFcmToken(token);
       } catch (err) {
-        console.warn('Failed to load data from storage', err);
+        console.warn('Failed to load phone from storage', err);
       }
     })();
   }, []);
@@ -82,9 +76,9 @@ export default function VerifyOtpScreen() {
       await fetch(`${API_BASE}/auth/request-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, fcmToken }),
+        body: JSON.stringify({ phone }),
       });
-      Alert.alert('OTP sent', 'New OTP sent to your phone');
+      Alert.alert('OTP sent', 'New OTP requested (dev-mode: check server logs)');
     } catch (err) {
       console.warn('Resend OTP failed', err);
       Alert.alert('Error', 'Could not resend OTP');

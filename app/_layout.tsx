@@ -1,17 +1,7 @@
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import * as Notifications from 'expo-notifications';
 import { useEffect } from 'react';
-
-// ✅ Configure notification behavior
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
-
+// ******************** 1st step 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
@@ -19,14 +9,6 @@ export default function RootLayout() {
   useEffect(() => {
     // Hide splash screen immediately
     SplashScreen.hideAsync().catch(() => {});
-
-    // ✅ Listen for push notifications
-    const subscription = Notifications.addNotificationResponseListener((response) => {
-      console.log('📬 Notification received:', response.notification.request.content);
-      // Handle notification interaction here
-    });
-
-    return () => subscription.remove();
   }, []);
 
   return (
