@@ -11,8 +11,11 @@ export default function ContractorLayout() {
         tabBarInactiveTintColor: "gray",
         tabBarStyle: {
           backgroundColor: "#fff",
-          height: 55,
-          paddingBottom: 0,
+          height: 60,
+          paddingBottom: 6,
+          paddingTop: 8,
+          borderTopWidth: 1,
+          borderTopColor: "#e0e0e0",
         },
       }}
       initialRouteName="index"

@@ -24,8 +24,13 @@ export default function Profile(): React.ReactElement {
   const [workerId, setWorkerId] = useState<string>("0000");
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [referralModalVisible, setReferralModalVisible] = useState(false);
+  const [earningsModalVisible, setEarningsModalVisible] = useState(false);
   const [workerName, setWorkerName] = useState<string>("");
   const [workerPhone, setWorkerPhone] = useState<string>("");
+  const [totalEarnings, setTotalEarnings] = useState(2450);
+  const [totalDeductions, setTotalDeductions] = useState(245);
+  const [totalBonus, setTotalBonus] = useState(500);
+  const [referralBonus, setReferralBonus] = useState(500);
   const router = useRouter();
 
   // Use central API base
@@ -197,13 +202,19 @@ export default function Profile(): React.ReactElement {
       <View style={styles.cardsRow}>
         {[
           { title: "Gig History", icon: "history", route: "/GigHistory" },
-          { title: "Earnings", icon: "attach-money", route: "/wallet" },
+          { title: "Earnings", icon: "attach-money", action: () => setEarningsModalVisible(true) },
           { title: "Settings", icon: "settings", route: "/Settings" },
         ].map((card, index) => (
           <TouchableOpacity
             key={index}
             style={styles.profileCard}
-            onPress={() => router.push(card.route as any)}
+            onPress={() => {
+              if ('route' in card) {
+                router.push(card.route as any);
+              } else if ('action' in card) {
+                (card.action as () => void)();
+              }
+            }}
           >
             <MaterialIcons name={card.icon as any} size={28} color="#1a2f4d" />
             <Text style={styles.cardTitle}>{card.title}</Text>
@@ -254,6 +265,89 @@ export default function Profile(): React.ReactElement {
         workerName={workerName}
         workerPhone={workerPhone}
       />
+
+      {/* Earnings Modal */}
+      <TouchableOpacity
+        style={[styles.modalBackdrop, earningsModalVisible && styles.modalBackdropActive]}
+        activeOpacity={1}
+        onPress={() => setEarningsModalVisible(false)}
+      >
+        <View style={[styles.earningsModal, earningsModalVisible && { opacity: 1 }]}>
+          <View style={styles.earningsHeader}>
+            <Text style={styles.earningsTitle}>Earnings Breakdown</Text>
+            <TouchableOpacity onPress={() => setEarningsModalVisible(false)}>
+              <MaterialIcons name="close" size={28} color="#fff" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.earningsContent} showsVerticalScrollIndicator={false}>
+            {/* Total Earnings Card */}
+            <LinearGradient
+              colors={["#27AE60", "#1E8449"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.totalEarningsCard}
+            >
+              <Text style={styles.totalEarningsLabel}>Total Earnings</Text>
+              <Text style={styles.totalEarningsValue}>₹{totalEarnings}</Text>
+              <Text style={styles.totalEarningsSubtext}>From {15} completed gigs</Text>
+            </LinearGradient>
+
+            {/* Earnings Breakdown */}
+            <View style={styles.earningsBreakdown}>
+              <View style={styles.earningsItem}>
+                <View style={[styles.earningsIconBox, { backgroundColor: "#E8F5E9" }]}>
+                  <MaterialIcons name="trending-up" size={24} color="#27AE60" />
+                </View>
+                <View style={styles.earningsItemContent}>
+                  <Text style={styles.earningsItemLabel}>Gig Earnings</Text>
+                  <Text style={styles.earningsItemValue}>₹{2450}</Text>
+                </View>
+              </View>
+
+              <View style={styles.earningsItem}>
+                <View style={[styles.earningsIconBox, { backgroundColor: "#FFF3E0" }]}>
+                  <MaterialIcons name="card-giftcard" size={24} color="#F39C12" />
+                </View>
+                <View style={styles.earningsItemContent}>
+                  <Text style={styles.earningsItemLabel}>Referral Bonus</Text>
+                  <Text style={styles.earningsItemValue}>₹{referralBonus}</Text>
+                </View>
+              </View>
+
+              <View style={styles.earningsItem}>
+                <View style={[styles.earningsIconBox, { backgroundColor: "#F3E5F5" }]}>
+                  <MaterialIcons name="card-membership" size={24} color="#9C27B0" />
+                </View>
+                <View style={styles.earningsItemContent}>
+                  <Text style={styles.earningsItemLabel}>Bonus</Text>
+                  <Text style={styles.earningsItemValue}>₹{totalBonus}</Text>
+                </View>
+              </View>
+
+              <View style={[styles.earningsItem, { borderBottomWidth: 0 }]}>
+                <View style={[styles.earningsIconBox, { backgroundColor: "#FFEBEE" }]}>
+                  <MaterialIcons name="trending-down" size={24} color="#E74C3C" />
+                </View>
+                <View style={styles.earningsItemContent}>
+                  <Text style={styles.earningsItemLabel}>Deductions</Text>
+                  <Text style={[styles.earningsItemValue, { color: "#E74C3C" }]}>-₹{totalDeductions}</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Net Earnings */}
+            <View style={styles.netEarningsCard}>
+              <Text style={styles.netEarningsLabel}>Available Balance</Text>
+              <Text style={styles.netEarningsValue}>₹{totalEarnings + totalBonus + referralBonus - totalDeductions}</Text>
+              <TouchableOpacity style={styles.withdrawButton}>
+                <MaterialIcons name="wallet" size={20} color="#fff" />
+                <Text style={styles.withdrawButtonText}>Withdraw to Wallet</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
