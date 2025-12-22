@@ -11,6 +11,8 @@ import {
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import ReferralModal from "../components/ReferralModal"; // ✅ Import referral modal
+import AsyncStorage from "@react-native-async-storage/async-storage"; // ✅ Import AsyncStorage
 
 export default function SettingsScreen(): React.ReactElement {
   const router = useRouter();
@@ -19,6 +21,21 @@ export default function SettingsScreen(): React.ReactElement {
   const [darkMode, setDarkMode] = useState(false);
   const [language, setLanguage] = useState<"en" | "hi">("en");
   const [selectedPayment, setSelectedPayment] = useState("upi");
+  const [referralModalVisible, setReferralModalVisible] = useState(false); // ✅ Referral modal state
+  const [workerName, setWorkerName] = useState("Worker"); // ✅ Will be loaded from AsyncStorage
+  const [workerPhone, setWorkerPhone] = useState("9876543210"); // ✅ Will be loaded from AsyncStorage
+
+  // ✅ Load user data when screen mounts
+  React.useEffect(() => {
+    (async () => {
+      const userStr = await AsyncStorage.getItem("user");
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        setWorkerName(user.name || "Worker");
+        setWorkerPhone(user.phone || "9876543210");
+      }
+    })();
+  }, []);
 
   const handleSave = () => {
     Alert.alert("Success", "Settings saved successfully!");
@@ -185,11 +202,29 @@ export default function SettingsScreen(): React.ReactElement {
         <MaterialIcons name="arrow-forward" size={20} color="#fff" />
       </TouchableOpacity>
 
+      {/* ✅ Referral Button */}
+      <TouchableOpacity 
+        style={styles.referralButton} 
+        onPress={() => setReferralModalVisible(true)}
+      >
+        <MaterialIcons name="card-giftcard" size={20} color="#fff" />
+        <Text style={styles.referralText}>Refer & Earn ₹500</Text>
+        <MaterialIcons name="arrow-forward" size={20} color="#fff" />
+      </TouchableOpacity>
+
       {/* Save Button */}
       <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
         <MaterialIcons name="save" size={20} color="#fff" />
         <Text style={styles.saveText}>Save Settings</Text>
       </TouchableOpacity>
+
+      {/* ✅ Referral Modal */}
+      <ReferralModal
+        visible={referralModalVisible}
+        onClose={() => setReferralModalVisible(false)}
+        workerName={workerName}
+        workerPhone={workerPhone}
+      />
 
       <View style={styles.spacer} />
     </ScrollView>
@@ -302,6 +337,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   verificationText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#fff",
+    flex: 1,
+    marginLeft: 12,
+  },
+  // ✅ Referral Button Styles
+  referralButton: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 12,
+    flexDirection: "row",
+    backgroundColor: "#F59E0B",
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  referralText: {
     fontSize: 16,
     fontWeight: "700",
     color: "#fff",

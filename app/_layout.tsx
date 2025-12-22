@@ -1,14 +1,47 @@
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { registerForPushNotificationsAsync } from '../services/notification';
+
 // ******************** 1st step 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
+// Set up notification handler
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
+
 export default function RootLayout() {
   useEffect(() => {
-    // Hide splash screen immediately
-    SplashScreen.hideAsync().catch(() => {});
+    const initializeApp = async () => {
+      try {
+        // ✅ REQUEST FCM TOKEN ON APP STARTUP
+        console.log('🚀 App starting - requesting FCM token...');
+        const fcmToken = await registerForPushNotificationsAsync();
+        
+        if (fcmToken) {
+          console.log('✅ FCM Token obtained on app startup:', fcmToken.substring(0, 30) + '...');
+          // Store for later use
+          await AsyncStorage.setItem('appFcmToken', fcmToken);
+        } else {
+          console.warn('⚠️ FCM Token request returned null');
+        }
+      } catch (error) {
+        console.error('❌ Error initializing FCM:', error);
+      } finally {
+        // Hide splash screen
+        SplashScreen.hideAsync().catch(() => {});
+      }
+    };
+
+    initializeApp();
   }, []);
 
   return (

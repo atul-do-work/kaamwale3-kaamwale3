@@ -4,7 +4,8 @@ import MapLibreGL from '@maplibre/maplibre-react-native';
 import * as Location from 'expo-location';
 import styles from '../styles/WorkerMapStyles';
 
-const MAP_STYLE = 'https://demotiles.maplibre.org/style.json';
+// ✅ MapTiler Streets Map with API Key
+const MAP_STYLE = 'https://api.maptiler.com/maps/streets-v4/style.json?key=rmEy5CtIKMlSfVx4fckr';
 
 type Props = {
   style?: StyleProp<ViewStyle>;

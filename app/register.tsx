@@ -25,17 +25,26 @@ export default function Register() {
       return Alert.alert('Error', 'Fill all fields');
 
     try {
-      // ✅ GET FCM TOKEN BEFORE REGISTRATION
+      // ✅ GET FCM TOKEN - Try from app startup first, then request
       let fcmToken = null;
       console.log('📋 Starting registration process...');
       
       try {
-        console.log('🔔 Requesting FCM token...');
-        fcmToken = await registerForPushNotificationsAsync();
-        if (fcmToken) {
-          console.log('✅ FCM Token obtained successfully:', fcmToken.substring(0, 30) + '...');
+        // First, try to get token from app startup
+        const savedToken = await AsyncStorage.getItem('appFcmToken');
+        if (savedToken) {
+          fcmToken = savedToken;
+          console.log('✅ Using FCM token from app startup:', fcmToken.substring(0, 30) + '...');
         } else {
-          console.log('⚠️ FCM Token is null - user may have denied permissions');
+          // If not available, request it now
+          console.log('🔔 No token from startup, requesting now...');
+          fcmToken = await registerForPushNotificationsAsync();
+          if (fcmToken) {
+            console.log('✅ FCM Token obtained during registration:', fcmToken.substring(0, 30) + '...');
+            await AsyncStorage.setItem('appFcmToken', fcmToken);
+          } else {
+            console.log('⚠️ FCM Token is null - user may have denied permissions');
+          }
         }
       } catch (err) {
         console.warn('⚠️ Could not get FCM token:', err);
@@ -62,6 +71,9 @@ export default function Register() {
 
         // ✅ REQUEST OTP WITH FCM TOKEN
         console.log('📨 Requesting OTP with FCM token...');
+        console.log('📝 Phone:', phone);
+        console.log('📝 FCM Token being sent:', fcmToken ? fcmToken.substring(0, 30) + '...' : 'null');
+        
         try {
           const otpRes = await fetch(`${API_BASE}/auth/request-otp`, {
             method: 'POST',
