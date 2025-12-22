@@ -51,9 +51,9 @@ export async function registerForPushNotificationsAsync() {
     
     console.log('✅ Permissions GRANTED - proceeding to get token');
     
-    // Get the Expo push token
-    console.log('🔑 Getting Expo push token...');
-    const tokenResponse = await Notifications.getExpoPushTokenAsync();
+    // Get the Android FCM token (not Expo token)
+    console.log('🔑 Getting Android FCM token...');
+    const tokenResponse = await Notifications.getDevicePushTokenAsync();
     token = tokenResponse.data;
     
     if (!token) {
