@@ -13,6 +13,29 @@ type User = {
   role: 'worker' | 'contractor';
 };
 
+// ✅ HELPER: Wait for FCM token with timeout and retries
+async function waitForFcmToken(timeoutMs = 8000) {
+  console.log('⏳ Waiting for FCM token (timeout: ' + timeoutMs + 'ms)...');
+  const start = Date.now();
+  let attempts = 0;
+
+  while (Date.now() - start < timeoutMs) {
+    attempts++;
+    const token = await AsyncStorage.getItem('appFcmToken');
+    
+    if (token) {
+      console.log('✅ FCM Token found on attempt', attempts);
+      return token;
+    }
+    
+    // Wait 500ms before next retry
+    await new Promise(res => setTimeout(res, 500));
+  }
+
+  console.log('⏱️ FCM token timeout after', attempts, 'attempts');
+  return null;
+}
+
 export default function Register() {
   const router = useRouter();
   const [name, setName] = useState('');
@@ -25,25 +48,27 @@ export default function Register() {
       return Alert.alert('Error', 'Fill all fields');
 
     try {
-      // ✅ GET FCM TOKEN - Try from app startup first, then request
+      // ✅ GET FCM TOKEN - Wait for it to be available (race condition fix)
       let fcmToken = null;
       console.log('📋 Starting registration process...');
       
       try {
-        // First, try to get token from app startup
-        const savedToken = await AsyncStorage.getItem('appFcmToken');
-        if (savedToken) {
-          fcmToken = savedToken;
-          console.log('✅ Using FCM token from app startup:', fcmToken.substring(0, 30) + '...');
+        // ✅ WAIT for FCM token from app startup (with timeout and retries)
+        console.log('⏳ Waiting for FCM token from app startup...');
+        fcmToken = await waitForFcmToken(8000);
+        
+        if (fcmToken) {
+          console.log('✅ FCM Token obtained from startup:', fcmToken.substring(0, 30) + '...');
         } else {
-          // If not available, request it now
-          console.log('🔔 No token from startup, requesting now...');
+          // Fallback: Request immediately if still not available
+          console.log('🔔 No token from startup after wait, requesting now...');
           fcmToken = await registerForPushNotificationsAsync();
+          
           if (fcmToken) {
             console.log('✅ FCM Token obtained during registration:', fcmToken.substring(0, 30) + '...');
             await AsyncStorage.setItem('appFcmToken', fcmToken);
           } else {
-            console.log('⚠️ FCM Token is null - user may have denied permissions');
+            console.log('⚠️ FCM Token is null - user may have denied permissions or token unavailable');
           }
         }
       } catch (err) {
@@ -51,6 +76,8 @@ export default function Register() {
         // Continue without token - OTP will use console fallback
       }
 
+      console.log('📦 FCM token result:', fcmToken ? 'AVAILABLE ✅' : 'NOT AVAILABLE ⚠️');
+      
       console.log('📤 Sending registration request...');
       const res = await fetch(`${API_BASE}/users/register`, {
         method: 'POST',
