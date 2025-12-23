@@ -54,25 +54,20 @@ export default function Register() {
       
       try {
         // ✅ WAIT for FCM token from app startup (with timeout and retries)
+        // ❌ DO NOT REQUEST PERMISSION AGAIN - it was already requested at app startup
         console.log('⏳ Waiting for FCM token from app startup...');
         fcmToken = await waitForFcmToken(8000);
         
         if (fcmToken) {
           console.log('✅ FCM Token obtained from startup:', fcmToken.substring(0, 30) + '...');
         } else {
-          // Fallback: Request immediately if still not available
-          console.log('🔔 No token from startup after wait, requesting now...');
-          fcmToken = await registerForPushNotificationsAsync();
-          
-          if (fcmToken) {
-            console.log('✅ FCM Token obtained during registration:', fcmToken.substring(0, 30) + '...');
-            await AsyncStorage.setItem('appFcmToken', fcmToken);
-          } else {
-            console.log('⚠️ FCM Token is null - user may have denied permissions or token unavailable');
-          }
+          // ❌ DO NOT call registerForPushNotificationsAsync() again
+          // ✅ Permission was already requested at app startup
+          // ✅ If token is still null after wait, let backend use console OTP fallback
+          console.log('⚠️ FCM token not available after 8s wait - backend will use console OTP');
         }
       } catch (err) {
-        console.warn('⚠️ Could not get FCM token:', err);
+        console.warn('⚠️ Could not wait for FCM token:', err);
         // Continue without token - OTP will use console fallback
       }
 
