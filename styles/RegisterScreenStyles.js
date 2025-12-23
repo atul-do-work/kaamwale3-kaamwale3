@@ -61,6 +61,31 @@ export default StyleSheet.create({
   roleTextSelected: {
     color: '#000',
   },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    backgroundColor: '#fff',
+    borderRadius: 30,
+    paddingRight: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  passwordInput: {
+    flex: 1,
+    height: 50,
+    paddingHorizontal: 20,
+    fontSize: 16,
+    color: '#000',
+  },
+  passwordToggleButton: {
+    padding: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   registerButton: {
     backgroundColor: '#fcb045',
     width: width - 40,

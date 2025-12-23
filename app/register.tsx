@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, StatusBar } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE } from '../utils/config';
@@ -41,6 +42,7 @@ export default function Register() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<'worker' | 'contractor'>('worker');
 
   const handleRegister = async () => {
@@ -138,9 +140,41 @@ export default function Register() {
       <StatusBar barStyle="light-content" />
       <Text style={styles.title}>Create Account</Text>
 
-      <TextInput style={styles.input} placeholder="Full Name" value={name} onChangeText={setName} />
-      <TextInput style={styles.input} placeholder="Phone" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
-      <TextInput style={styles.input} placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} />
+      <TextInput 
+        style={styles.input} 
+        placeholder="Full Name" 
+        placeholderTextColor="#999"
+        value={name} 
+        onChangeText={setName} 
+      />
+      <TextInput 
+        style={styles.input} 
+        placeholder="Phone Number" 
+        placeholderTextColor="#999"
+        keyboardType="phone-pad" 
+        value={phone} 
+        onChangeText={setPhone} 
+      />
+      <View style={styles.passwordContainer}>
+        <TextInput 
+          style={styles.passwordInput} 
+          placeholder="Password" 
+          placeholderTextColor="#999"
+          secureTextEntry={!showPassword} 
+          value={password} 
+          onChangeText={setPassword} 
+        />
+        <TouchableOpacity 
+          style={styles.passwordToggleButton}
+          onPress={() => setShowPassword(!showPassword)}
+        >
+          <MaterialIcons 
+            name={showPassword ? "visibility" : "visibility-off"} 
+            size={22} 
+            color="#007AFF" 
+          />
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.roleContainer}>
         <TouchableOpacity style={[styles.roleButton, role === 'worker' && styles.roleButtonSelected]} onPress={() => setRole('worker')}>

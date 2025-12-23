@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE } from '../utils/config';
 import { useRouter } from "expo-router";
@@ -19,6 +20,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
@@ -129,14 +131,26 @@ export default function LoginScreen() {
         placeholderTextColor="#888"
       />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-        placeholderTextColor="#888"
-      />
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={styles.passwordInput}
+          placeholder="Password"
+          secureTextEntry={!passwordVisible}
+          value={password}
+          onChangeText={setPassword}
+          placeholderTextColor="#888"
+        />
+        <TouchableOpacity
+          style={styles.passwordToggle}
+          onPress={() => setPasswordVisible(!passwordVisible)}
+        >
+          <MaterialIcons
+            name={passwordVisible ? "visibility" : "visibility-off"}
+            size={22}
+            color="#666"
+          />
+        </TouchableOpacity>
+      </View>
 
       <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
         {loading ? (

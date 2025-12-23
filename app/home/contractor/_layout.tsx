@@ -1,8 +1,11 @@
 import { Tabs } from "expo-router";
 import { MaterialIcons, FontAwesome5, Ionicons } from "@expo/vector-icons";
 import React from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ContractorLayout() {
+  const insets = useSafeAreaInsets();
+  
   return (
     <Tabs
       screenOptions={{
@@ -11,8 +14,8 @@ export default function ContractorLayout() {
         tabBarInactiveTintColor: "gray",
         tabBarStyle: {
           backgroundColor: "#fff",
-          height: 60,
-          paddingBottom: 6,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
           paddingTop: 8,
           borderTopWidth: 1,
           borderTopColor: "#e0e0e0",
