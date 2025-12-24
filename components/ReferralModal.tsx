@@ -38,7 +38,7 @@ export default function ReferralModal({
   }, [workerName, workerPhone]);
 
   const referralLink = `https://kaamwale.app/ref/${referralCode}`;
-  const referralMessage = `🎉 Join Kaamwale and earn money!\n\nUse my referral code: ${referralCode}\nGet ₹500 bonus when you register!\n\n${referralLink}`;
+  const referralMessage = `🎉 Join Kaamwale and earn money!\n\nUse my referral code: ${referralCode}\nGet ₹50 bonus when you register!\n\n${referralLink}`;
 
   // Share on WhatsApp
   const shareOnWhatsApp = async () => {
@@ -110,12 +110,12 @@ export default function ReferralModal({
             {/* Rewards Info */}
             <View style={styles.rewardBox}>
               <MaterialIcons name="card-giftcard" size={30} color="#4CAF50" />
-              <Text style={styles.rewardTitle}>Earn ₹500 Per Referral</Text>
+              <Text style={styles.rewardTitle}>Earn ₹50 Per Referral</Text>
               <Text style={styles.rewardDescription}>
-                Your friend gets ₹500 bonus on first job
+                Your friend gets ₹50 bonus on first job
               </Text>
               <Text style={styles.rewardDescription}>
-                You get ₹500 when they complete their first job
+                You get ₹50 when they complete their first job
               </Text>
             </View>
 
@@ -138,7 +138,7 @@ export default function ReferralModal({
                 <View style={styles.stepNumber}>
                   <Text style={styles.stepNumberText}>3</Text>
                 </View>
-                <Text style={styles.stepText}>Both get ₹500 bonus!</Text>
+                <Text style={styles.stepText}>Both get ₹50 bonus!</Text>
               </View>
             </View>
           </View>

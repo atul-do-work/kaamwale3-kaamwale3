@@ -19,6 +19,10 @@ import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { socket } from "../../../utils/socket"; // ✅ Use global socket instead
 import { API_BASE } from "../../../utils/config";
+import { 
+  triggerJobAlert,
+  cleanupJobAlert,
+} from "../../../services/jobNotificationService";
 
 const WORKER_NAME_FALLBACK = "Test Worker";
 const AUTO_DECLINE_SECONDS = 30;
@@ -291,6 +295,8 @@ function WorkerHome() {
               const lon = loc.coords.longitude;
               console.log(`[WorkerHome] Got location: ${lat}, ${lon}`);
 
+              // 🔔 Register for push notifications
+              console.log("[WorkerHome] Registering for push notifications...");
               // Register worker with backend
               console.log("[WorkerHome] Emitting registerWorker event...");
               socket.emit("registerWorker", {
@@ -381,7 +387,8 @@ function WorkerHome() {
         stopLocationTracking(); // Stop tracking until job accepted
         startTimer();
 
-        Alert.alert("New Job Available", data.title);
+        // � Trigger vibration when job arrives
+        await triggerJobAlert();
       } catch (err) {
         console.error("❌ Error handling new job:", err);
         const errMsg = err instanceof Error ? err.message : String(err);
@@ -734,6 +741,7 @@ function WorkerHome() {
 
   // ---------------- HANDLE ACCEPT ----------------
   const handleAccept = async (jobId: string) => {
+    await cleanupJobAlert();
     if (timerRef.current) clearInterval(timerRef.current);
 
     try {
@@ -757,9 +765,10 @@ function WorkerHome() {
       }
 
       console.log("✅ Job accepted successfully");
+      
       setHandledJobs(p => new Set(p).add(jobId));
       setCurrentJob(null);
-      Alert.alert("Job Accepted", "You accepted this job!");
+      Alert.alert("✅ Job Accepted", "You accepted this job!");
 
       socket.emit("jobAccepted", { jobId, workerName, workerType });
     } catch (err) {
@@ -770,6 +779,7 @@ function WorkerHome() {
 
   // ---------------- HANDLE DECLINE ----------------
   const handleDecline = async (jobId: string, auto = false) => {
+    await cleanupJobAlert();
     if (timerRef.current) clearInterval(timerRef.current);
 
     try {
@@ -793,12 +803,13 @@ function WorkerHome() {
       }
 
       console.log("✅ Job declined successfully");
+      
       setHandledJobs(prev => new Set(prev).add(jobId));
       setCurrentJob(null);
 
       if (currentLocation) await fetchNearbyJobs(currentLocation.lat, currentLocation.lon);
 
-      if (!auto) Alert.alert("Job Declined", "You declined this job!");
+      if (!auto) Alert.alert("📋 Job Declined", "You declined this job!");
     } catch (err) {
       console.error("❌ Decline error:", err);
       Alert.alert("Error", err instanceof Error ? err.message : "Could not decline job.");
@@ -869,14 +880,20 @@ function WorkerHome() {
           visible={!!currentJob}
           transparent
           animationType="fade"
-          onRequestClose={() => setCurrentJob(null)}
+          onRequestClose={async () => {
+            await cleanupJobAlert();
+            setCurrentJob(null);
+          }}
         >
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               {/* Close Button */}
               <TouchableOpacity 
                 style={styles.closeButton}
-                onPress={() => setCurrentJob(null)}
+                onPress={async () => {
+                  await cleanupJobAlert();
+                  setCurrentJob(null);
+                }}
               >
                 <MaterialIcons name="close" size={28} color="#000" />
               </TouchableOpacity>
