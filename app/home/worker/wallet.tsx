@@ -6,7 +6,8 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  Modal
+  Modal,
+  SafeAreaView
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -16,8 +17,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE as API_URL } from '../../../utils/config';
-import { socket } from '../../../utils/socket'; // ✅ Import Socket.IO
-import { connectSocket } from '../../../utils/socket'; // ✅ Import connect function
+import { socket } from '../../../utils/socket';
+import { connectSocket } from '../../../utils/socket';
 // Define types for wallet and transactions
 type Transaction = {
   type: 'deposit' | 'withdraw' | 'payment'; // ✅ Added 'payment' type for contractor payments
@@ -588,8 +589,8 @@ export default function Wallet(): React.ReactElement {
 
       {/* ✅ Razorpay Deposit Modal */}
       <Modal visible={depositModalVisible} transparent animationType="slide">
-        <View style={{ flex: 1, backgroundColor: "#fff" }}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: 12, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: "#DDD" }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: 12, paddingHorizontal: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#DDD" }}>
             <Text style={{ fontSize: 16, fontWeight: "600", color: "#333" }}>Wallet Deposit</Text>
             <TouchableOpacity onPress={() => setDepositModalVisible(false)}>
               <MaterialIcons name="close" size={28} color="#333" />
@@ -607,110 +608,112 @@ export default function Wallet(): React.ReactElement {
               <Text>Loading...</Text>
             </View>
           )}
-        </View>
+        </SafeAreaView>
       </Modal>
 
       {/* ✅ Bank Account Modal */}
       <Modal visible={showAddBank} transparent animationType="slide">
-        <ScrollView style={{ flex: 1, backgroundColor: "#fff" }}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: 12, paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#EEE" }}>
-            <Text style={{ fontSize: 18, fontWeight: "700", color: "#333" }}>Add Bank Account</Text>
-            <TouchableOpacity onPress={() => setShowAddBank(false)}>
-              <MaterialIcons name="close" size={28} color="#333" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={{ padding: 16 }}>
-            {/* Account Holder Name */}
-            <Text style={{ fontSize: 14, fontWeight: "600", color: "#333", marginBottom: 8 }}>Account Holder Name *</Text>
-            <TextInput
-              style={{ borderWidth: 1, borderColor: "#DDD", borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14 }}
-              placeholder="Full name as per bank"
-              value={bankDetails.accountHolderName}
-              onChangeText={(val) => setBankDetails({ ...bankDetails, accountHolderName: val })}
-            />
-
-            {/* Bank Name */}
-            <Text style={{ fontSize: 14, fontWeight: "600", color: "#333", marginBottom: 8 }}>Bank Name *</Text>
-            <TextInput
-              style={{ borderWidth: 1, borderColor: "#DDD", borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14 }}
-              placeholder="e.g., ICICI Bank, HDFC Bank"
-              value={bankDetails.bankName}
-              onChangeText={(val) => setBankDetails({ ...bankDetails, bankName: val })}
-            />
-
-            {/* Account Type */}
-            <Text style={{ fontSize: 14, fontWeight: "600", color: "#333", marginBottom: 8 }}>Account Type *</Text>
-            <View style={{ flexDirection: 'row', marginBottom: 16 }}>
-              <TouchableOpacity
-                style={{
-                  flex: 1,
-                  padding: 12,
-                  borderWidth: 2,
-                  borderColor: bankDetails.accountType === 'savings' ? '#1a2f4d' : '#DDD',
-                  borderRadius: 8,
-                  marginRight: 8,
-                  alignItems: 'center'
-                }}
-                onPress={() => setBankDetails({ ...bankDetails, accountType: 'savings' })}
-              >
-                <Text style={{ fontWeight: bankDetails.accountType === 'savings' ? '700' : '600', color: bankDetails.accountType === 'savings' ? '#1a2f4d' : '#666' }}>Savings</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={{
-                  flex: 1,
-                  padding: 12,
-                  borderWidth: 2,
-                  borderColor: bankDetails.accountType === 'current' ? '#1a2f4d' : '#DDD',
-                  borderRadius: 8,
-                  alignItems: 'center'
-                }}
-                onPress={() => setBankDetails({ ...bankDetails, accountType: 'current' })}
-              >
-                <Text style={{ fontWeight: bankDetails.accountType === 'current' ? '700' : '600', color: bankDetails.accountType === 'current' ? '#1a2f4d' : '#666' }}>Current</Text>
+        <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+          <ScrollView style={{ flex: 1 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: 12, paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#EEE" }}>
+              <Text style={{ fontSize: 18, fontWeight: "700", color: "#333" }}>Add Bank Account</Text>
+              <TouchableOpacity onPress={() => setShowAddBank(false)}>
+                <MaterialIcons name="close" size={28} color="#333" />
               </TouchableOpacity>
             </View>
 
-            {/* Account Number */}
-            <Text style={{ fontSize: 14, fontWeight: "600", color: "#333", marginBottom: 8 }}>Account Number *</Text>
-            <TextInput
-              style={{ borderWidth: 1, borderColor: "#DDD", borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14 }}
-              placeholder="Enter account number"
-              keyboardType="number-pad"
-              value={bankDetails.accountNumber}
-              onChangeText={(val) => setBankDetails({ ...bankDetails, accountNumber: val })}
-            />
+            <View style={{ padding: 16 }}>
+              {/* Account Holder Name */}
+              <Text style={{ fontSize: 14, fontWeight: "600", color: "#333", marginBottom: 8 }}>Account Holder Name *</Text>
+              <TextInput
+                style={{ borderWidth: 1, borderColor: "#DDD", borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14 }}
+                placeholder="Full name as per bank"
+                value={bankDetails.accountHolderName}
+                onChangeText={(val) => setBankDetails({ ...bankDetails, accountHolderName: val })}
+              />
 
-            {/* Confirm Account Number */}
-            <Text style={{ fontSize: 14, fontWeight: "600", color: "#333", marginBottom: 8 }}>Confirm Account Number *</Text>
-            <TextInput
-              style={{ borderWidth: 1, borderColor: "#DDD", borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14 }}
-              placeholder="Re-enter account number"
-              keyboardType="number-pad"
-              value={bankDetails.accountNumberConfirm}
-              onChangeText={(val) => setBankDetails({ ...bankDetails, accountNumberConfirm: val })}
-            />
+              {/* Bank Name */}
+              <Text style={{ fontSize: 14, fontWeight: "600", color: "#333", marginBottom: 8 }}>Bank Name *</Text>
+              <TextInput
+                style={{ borderWidth: 1, borderColor: "#DDD", borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14 }}
+                placeholder="e.g., ICICI Bank, HDFC Bank"
+                value={bankDetails.bankName}
+                onChangeText={(val) => setBankDetails({ ...bankDetails, bankName: val })}
+              />
 
-            {/* IFSC Code */}
-            <Text style={{ fontSize: 14, fontWeight: "600", color: "#333", marginBottom: 8 }}>IFSC Code *</Text>
-            <TextInput
-              style={{ borderWidth: 1, borderColor: "#DDD", borderRadius: 8, padding: 12, marginBottom: 24, fontSize: 14 }}
-              placeholder="e.g., ICIC0000001"
-              maxLength={11}
-              value={bankDetails.ifscCode}
-              onChangeText={(val) => setBankDetails({ ...bankDetails, ifscCode: val.toUpperCase() })}
-            />
+              {/* Account Type */}
+              <Text style={{ fontSize: 14, fontWeight: "600", color: "#333", marginBottom: 8 }}>Account Type *</Text>
+              <View style={{ flexDirection: 'row', marginBottom: 16 }}>
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    padding: 12,
+                    borderWidth: 2,
+                    borderColor: bankDetails.accountType === 'savings' ? '#1a2f4d' : '#DDD',
+                    borderRadius: 8,
+                    marginRight: 8,
+                    alignItems: 'center'
+                  }}
+                  onPress={() => setBankDetails({ ...bankDetails, accountType: 'savings' })}
+                >
+                  <Text style={{ fontWeight: bankDetails.accountType === 'savings' ? '700' : '600', color: bankDetails.accountType === 'savings' ? '#1a2f4d' : '#666' }}>Savings</Text>
+                </TouchableOpacity>
 
-            {/* Submit Button */}
-            <TouchableOpacity
-              style={{ backgroundColor: "#1a2f4d", padding: 16, borderRadius: 8, alignItems: 'center', marginBottom: 32 }}
-              onPress={handleAddBankAccount}
-            >
-              <Text style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}>Save Bank Account</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    padding: 12,
+                    borderWidth: 2,
+                    borderColor: bankDetails.accountType === 'current' ? '#1a2f4d' : '#DDD',
+                    borderRadius: 8,
+                    alignItems: 'center'
+                  }}
+                  onPress={() => setBankDetails({ ...bankDetails, accountType: 'current' })}
+                >
+                  <Text style={{ fontWeight: bankDetails.accountType === 'current' ? '700' : '600', color: bankDetails.accountType === 'current' ? '#1a2f4d' : '#666' }}>Current</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Account Number */}
+              <Text style={{ fontSize: 14, fontWeight: "600", color: "#333", marginBottom: 8 }}>Account Number *</Text>
+              <TextInput
+                style={{ borderWidth: 1, borderColor: "#DDD", borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14 }}
+                placeholder="Enter account number"
+                keyboardType="number-pad"
+                value={bankDetails.accountNumber}
+                onChangeText={(val) => setBankDetails({ ...bankDetails, accountNumber: val })}
+              />
+
+              {/* Confirm Account Number */}
+              <Text style={{ fontSize: 14, fontWeight: "600", color: "#333", marginBottom: 8 }}>Confirm Account Number *</Text>
+              <TextInput
+                style={{ borderWidth: 1, borderColor: "#DDD", borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14 }}
+                placeholder="Re-enter account number"
+                keyboardType="number-pad"
+                value={bankDetails.accountNumberConfirm}
+                onChangeText={(val) => setBankDetails({ ...bankDetails, accountNumberConfirm: val })}
+              />
+
+              {/* IFSC Code */}
+              <Text style={{ fontSize: 14, fontWeight: "600", color: "#333", marginBottom: 8 }}>IFSC Code *</Text>
+              <TextInput
+                style={{ borderWidth: 1, borderColor: "#DDD", borderRadius: 8, padding: 12, marginBottom: 24, fontSize: 14 }}
+                placeholder="e.g., ICIC0000001"
+                maxLength={11}
+                value={bankDetails.ifscCode}
+                onChangeText={(val) => setBankDetails({ ...bankDetails, ifscCode: val.toUpperCase() })}
+              />
+
+              {/* Submit Button */}
+              <TouchableOpacity
+                style={{ backgroundColor: "#1a2f4d", padding: 16, borderRadius: 8, alignItems: 'center', marginBottom: 32 }}
+                onPress={handleAddBankAccount}
+              >
+                <Text style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}>Save Bank Account</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
       </Modal>
 
       {/* ✅ Bank Account Info Display */}

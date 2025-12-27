@@ -229,7 +229,7 @@ export default function Profile(): React.ReactElement {
       >
         <View>
           <Text style={styles.referralHeading}>Referral Bonus</Text>
-          <Text style={styles.referralText}>You have earned ₹500 from referrals</Text>
+          <Text style={styles.referralText}>You have earned ₹50 from referrals</Text>
         </View>
         <MaterialIcons name="card-giftcard" size={40} color="#1a2f4d" />
       </TouchableOpacity>

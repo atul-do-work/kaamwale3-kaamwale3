@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { View, Text, ScrollView, Alert, Image, TouchableOpacity, Modal } from "react-native";
+import { View, Text, ScrollView, Alert, Image, TouchableOpacity, Modal, SafeAreaView } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -294,7 +294,7 @@ export default function Jobs(): React.ReactElement {
   }, [workerName, token]);
 
   return (
-    <View style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1 }}>
       <ScrollView style={styles.container} contentContainerStyle={{ paddingVertical: 12 }}>
         {loading ? (
           <Text style={styles.loadingText}>Loading jobs...</Text>
@@ -537,6 +537,6 @@ export default function Jobs(): React.ReactElement {
           contractorName={selectedJobForMap.contractorName}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
