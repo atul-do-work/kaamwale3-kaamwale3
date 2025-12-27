@@ -336,11 +336,16 @@ export default function ContractorWalletAttendance() {
         })
       });
 
-      const verifyData = await verifyResponse.json();
+      // Parse response
+      const verifyData = await verifyResponse.json().catch(() => ({
+        success: false,
+        message: 'Invalid response from server'
+      }));
 
       setRazorpayModalVisible(false);
 
-      if (verifyData.success) {
+      // Check HTTP status AND response success flag
+      if (verifyResponse.ok && verifyData.success) {
         Alert.alert("Success", "Payment successful! Amount added to worker's wallet");
         setJobs(prev => prev.map(j => (j._id === currentPaymentJobId ? { ...j, paymentStatus: "Paid" } : j)));
         

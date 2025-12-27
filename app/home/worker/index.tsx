@@ -22,6 +22,7 @@ import { API_BASE } from "../../../utils/config";
 import { 
   triggerJobAlert,
   cleanupJobAlert,
+  initializeAudioSession,
 } from "../../../services/jobNotificationService";
 
 const WORKER_NAME_FALLBACK = "Test Worker";
@@ -239,6 +240,11 @@ function WorkerHome() {
   useEffect(() => {
     (async () => {
       try {
+        // Initialize audio session for job alerts
+        console.log("[WorkerHome] Initializing audio session for job alerts...");
+        await initializeAudioSession();
+        console.log("[WorkerHome] ✅ Audio session ready");
+
         console.log("[WorkerHome] Loading worker data and connecting socket...");
         
         const userStr = await AsyncStorage.getItem("user");
