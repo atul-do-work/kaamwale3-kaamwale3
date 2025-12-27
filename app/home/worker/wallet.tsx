@@ -5,10 +5,12 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Alert
+  Alert,
+  Modal
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { WebView } from 'react-native-webview';
 import styles from '../../../styles/WorkerWalletStyles';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
@@ -35,8 +37,27 @@ export default function Wallet(): React.ReactElement {
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [currentUserPhone, setCurrentUserPhone] = useState<string | null>(null);
-  const [walletFetchPending, setWalletFetchPending] = useState(false); // ✅ Prevent race conditions
-  const previousUserPhoneRef = useRef<string | null>(null); // ✅ Track previous user to detect changes
+  const [walletFetchPending, setWalletFetchPending] = useState(false);
+  const previousUserPhoneRef = useRef<string | null>(null);
+  
+  // ✅ Razorpay deposit states
+  const [depositModalVisible, setDepositModalVisible] = useState(false);
+  const [depositModalHtml, setDepositModalHtml] = useState('');
+  const [currentDepositAmount, setCurrentDepositAmount] = useState(0);
+  const [currentDepositOrderId, setCurrentDepositOrderId] = useState('');
+
+  // ✅ Bank account states
+  const [bankAccount, setBankAccount] = useState<any>(null);
+  const [showAddBank, setShowAddBank] = useState(false);
+  const [bankDetails, setBankDetails] = useState({
+    accountHolderName: '',
+    accountNumber: '',
+    accountNumberConfirm: '',
+    ifscCode: '',
+    bankName: '',
+    accountType: 'savings'
+  });
+  const [token, setToken] = useState<string | null>(null);
 
   // API_URL imported from central config
 
@@ -160,6 +181,7 @@ export default function Wallet(): React.ReactElement {
     React.useCallback(() => {
       console.log("📱 Wallet screen focused - refreshing balance");
       fetchWallet();
+      fetchBankAccount();
     }, [])
   );
 
@@ -202,23 +224,141 @@ export default function Wallet(): React.ReactElement {
       Alert.alert('Error', 'Enter a valid amount to deposit');
       return;
     }
+    
+    if (Number(depositAmount) < 100) {
+      Alert.alert('Error', 'Minimum deposit is ₹100');
+      return;
+    }
 
     try {
       const token = await AsyncStorage.getItem('token');
-      const res = await axios.post(
-        `${API_URL}/wallet/deposit`,
+      
+      // Step 1: Create deposit order
+      const orderRes = await axios.post(
+        `${API_URL}/wallet/deposit/create-order`,
         { amount: Number(depositAmount) },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      if (!orderRes.data.success) {
+        Alert.alert('Error', 'Failed to create deposit order');
+        return;
+      }
+
+      const { orderId, key_id } = orderRes.data;
+
+      // Step 2: Create Razorpay checkout HTML
+      const razorpayHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+          <style>
+            body { margin: 0; padding: 0; background: #f5f5f5; }
+            #checkout-container { display: flex; justify-content: center; align-items: center; height: 100vh; }
+          </style>
+        </head>
+        <body>
+          <div id="checkout-container">
+            <p>Opening Razorpay Checkout...</p>
+          </div>
+          <script>
+            var options = {
+              "key": "${key_id}",
+              "amount": ${Number(depositAmount) * 100},
+              "currency": "INR",
+              "name": "Kaamwale Wallet",
+              "description": "Wallet Deposit",
+              "order_id": "${orderId}",
+              "handler": function (response){
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                  type: 'deposit_success',
+                  paymentId: response.razorpay_payment_id,
+                  orderId: response.razorpay_order_id,
+                  signature: response.razorpay_signature
+                }));
+              },
+              "prefill": {
+                "name": "User",
+                "email": "user@example.com",
+                "contact": "9999999999"
+              },
+              "theme": {
+                "color": "#1a2f4d"
+              }
+            };
+            var rzp1 = new Razorpay(options);
+            rzp1.open();
+            
+            rzp1.on('payment.failed', function (response){
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'deposit_failed',
+                error: response.error.description
+              }));
+            });
+          </script>
+        </body>
+        </html>
+      `;
+
+      setDepositModalHtml(razorpayHtml);
+      setDepositModalVisible(true);
+      setCurrentDepositAmount(Number(depositAmount));
+      setCurrentDepositOrderId(orderId);
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.message || 'Failed to initiate deposit');
+    }
+  };
+
+  // Handle Razorpay deposit response
+  const handleDepositMessage = async (event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+
+      if (data.type === 'deposit_success') {
+        // Verify deposit on backend
+        await verifyDeposit(data);
+      } else if (data.type === 'deposit_failed') {
+        setDepositModalVisible(false);
+        Alert.alert('Payment Failed', data.error || 'Deposit cancelled');
+      }
+    } catch (error) {
+      console.error('Error handling deposit response:', error);
+    }
+  };
+
+  // Verify deposit payment
+  const verifyDeposit = async (data: any) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      
+      const res = await axios.post(
+        `${API_URL}/wallet/deposit/verify`,
+        {
+          orderId: data.orderId,
+          paymentId: data.paymentId,
+          signature: data.signature,
+          amount: currentDepositAmount
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setDepositModalVisible(false);
+
       if (res.data.success) {
-        setWallet(res.data.wallet);
-        Alert.alert('Success', `₹${depositAmount} deposited!`);
+        setWallet({ ...wallet, balance: res.data.walletBalance });
+        Alert.alert('Success', `₹${currentDepositAmount} deposited to your wallet!`);
         setDepositAmount('');
         setShowDeposit(false);
+        
+        // Refresh wallet
+        fetchWallet();
+      } else {
+        Alert.alert('Error', res.data.message || 'Deposit verification failed');
       }
     } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.message || 'Deposit failed');
+      setDepositModalVisible(false);
+      Alert.alert('Error', err.response?.data?.message || 'Deposit verification failed');
     }
   };
 
@@ -227,27 +367,122 @@ export default function Wallet(): React.ReactElement {
       Alert.alert('Error', 'Enter a valid amount to withdraw');
       return;
     }
+
+    if (Number(withdrawAmount) < 100) {
+      Alert.alert('Error', 'Minimum withdrawal is ₹100');
+      return;
+    }
+
     if (Number(withdrawAmount) > wallet.balance) {
       Alert.alert('Error', 'Insufficient balance');
       return;
     }
 
+    // Check if bank account is linked
+    if (!bankAccount) {
+      Alert.alert(
+        'Bank Account Required',
+        'Please add your bank account details before withdrawing',
+        [
+          { text: 'Cancel', onPress: () => {} },
+          { text: 'Add Bank Account', onPress: () => setShowAddBank(true) }
+        ]
+      );
+      return;
+    }
+
     try {
-      const token = await AsyncStorage.getItem('token');
+      const savedToken = await AsyncStorage.getItem('token');
       const res = await axios.post(
         `${API_URL}/wallet/withdraw`,
         { amount: Number(withdrawAmount) },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${savedToken}` } }
       );
 
       if (res.data.success) {
-        setWallet(res.data.wallet);
-        Alert.alert('Success', `₹${withdrawAmount} withdrawn!`);
+        setWallet({ ...wallet, balance: res.data.walletBalance });
+        Alert.alert('Success', `Withdrawal of ₹${withdrawAmount} initiated!\n\nAmount will be transferred to your bank account within 2-4 hours.`);
         setWithdrawAmount('');
         setShowWithdraw(false);
+        
+        // Refresh wallet
+        fetchWallet();
       }
     } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.message || 'Withdrawal failed');
+      const errorMsg = err.response?.data?.message || 'Withdrawal failed';
+      Alert.alert('Error', errorMsg);
+    }
+  };
+
+  // ✅ Fetch bank account
+  const fetchBankAccount = async () => {
+    try {
+      const savedToken = await AsyncStorage.getItem('token');
+      const res = await axios.get(
+        `${API_URL}/wallet/bank-account`,
+        { headers: { Authorization: `Bearer ${savedToken}` } }
+      );
+
+      if (res.data.success) {
+        setBankAccount(res.data.bankAccount);
+      }
+    } catch (err) {
+      console.error('Error fetching bank account:', err);
+    }
+  };
+
+  // ✅ Add/Update bank account
+  const handleAddBankAccount = async () => {
+    // Validation
+    if (!bankDetails.accountHolderName.trim()) {
+      Alert.alert('Error', 'Please enter account holder name');
+      return;
+    }
+
+    if (bankDetails.accountNumber.length < 9 || bankDetails.accountNumber.length > 18) {
+      Alert.alert('Error', 'Account number must be 9-18 digits');
+      return;
+    }
+
+    if (bankDetails.accountNumber !== bankDetails.accountNumberConfirm) {
+      Alert.alert('Error', 'Account numbers do not match');
+      return;
+    }
+
+    if (bankDetails.ifscCode.length !== 11) {
+      Alert.alert('Error', 'IFSC code must be exactly 11 characters');
+      return;
+    }
+
+    if (!bankDetails.bankName.trim()) {
+      Alert.alert('Error', 'Please enter bank name');
+      return;
+    }
+
+    try {
+      const savedToken = await AsyncStorage.getItem('token');
+      const res = await axios.post(
+        `${API_URL}/wallet/bank-account/add`,
+        bankDetails,
+        { headers: { Authorization: `Bearer ${savedToken}` } }
+      );
+
+      if (res.data.success) {
+        setBankAccount(res.data.bankAccount);
+        setBankDetails({
+          accountHolderName: '',
+          accountNumber: '',
+          accountNumberConfirm: '',
+          ifscCode: '',
+          bankName: '',
+          accountType: 'savings'
+        });
+        setShowAddBank(false);
+        Alert.alert('Success', 'Bank account added! Waiting for verification.');
+        fetchBankAccount();
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.message || 'Failed to add bank account');
     }
   };
 
@@ -350,6 +585,150 @@ export default function Wallet(): React.ReactElement {
           </View>
         ))}
       </View>
+
+      {/* ✅ Razorpay Deposit Modal */}
+      <Modal visible={depositModalVisible} transparent animationType="slide">
+        <View style={{ flex: 1, backgroundColor: "#fff" }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: 12, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: "#DDD" }}>
+            <Text style={{ fontSize: 16, fontWeight: "600", color: "#333" }}>Wallet Deposit</Text>
+            <TouchableOpacity onPress={() => setDepositModalVisible(false)}>
+              <MaterialIcons name="close" size={28} color="#333" />
+            </TouchableOpacity>
+          </View>
+          {depositModalHtml ? (
+            <WebView
+              source={{ html: depositModalHtml }}
+              onMessage={handleDepositMessage}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+            />
+          ) : (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+              <Text>Loading...</Text>
+            </View>
+          )}
+        </View>
+      </Modal>
+
+      {/* ✅ Bank Account Modal */}
+      <Modal visible={showAddBank} transparent animationType="slide">
+        <ScrollView style={{ flex: 1, backgroundColor: "#fff" }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: 12, paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#EEE" }}>
+            <Text style={{ fontSize: 18, fontWeight: "700", color: "#333" }}>Add Bank Account</Text>
+            <TouchableOpacity onPress={() => setShowAddBank(false)}>
+              <MaterialIcons name="close" size={28} color="#333" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ padding: 16 }}>
+            {/* Account Holder Name */}
+            <Text style={{ fontSize: 14, fontWeight: "600", color: "#333", marginBottom: 8 }}>Account Holder Name *</Text>
+            <TextInput
+              style={{ borderWidth: 1, borderColor: "#DDD", borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14 }}
+              placeholder="Full name as per bank"
+              value={bankDetails.accountHolderName}
+              onChangeText={(val) => setBankDetails({ ...bankDetails, accountHolderName: val })}
+            />
+
+            {/* Bank Name */}
+            <Text style={{ fontSize: 14, fontWeight: "600", color: "#333", marginBottom: 8 }}>Bank Name *</Text>
+            <TextInput
+              style={{ borderWidth: 1, borderColor: "#DDD", borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14 }}
+              placeholder="e.g., ICICI Bank, HDFC Bank"
+              value={bankDetails.bankName}
+              onChangeText={(val) => setBankDetails({ ...bankDetails, bankName: val })}
+            />
+
+            {/* Account Type */}
+            <Text style={{ fontSize: 14, fontWeight: "600", color: "#333", marginBottom: 8 }}>Account Type *</Text>
+            <View style={{ flexDirection: 'row', marginBottom: 16 }}>
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  padding: 12,
+                  borderWidth: 2,
+                  borderColor: bankDetails.accountType === 'savings' ? '#1a2f4d' : '#DDD',
+                  borderRadius: 8,
+                  marginRight: 8,
+                  alignItems: 'center'
+                }}
+                onPress={() => setBankDetails({ ...bankDetails, accountType: 'savings' })}
+              >
+                <Text style={{ fontWeight: bankDetails.accountType === 'savings' ? '700' : '600', color: bankDetails.accountType === 'savings' ? '#1a2f4d' : '#666' }}>Savings</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  padding: 12,
+                  borderWidth: 2,
+                  borderColor: bankDetails.accountType === 'current' ? '#1a2f4d' : '#DDD',
+                  borderRadius: 8,
+                  alignItems: 'center'
+                }}
+                onPress={() => setBankDetails({ ...bankDetails, accountType: 'current' })}
+              >
+                <Text style={{ fontWeight: bankDetails.accountType === 'current' ? '700' : '600', color: bankDetails.accountType === 'current' ? '#1a2f4d' : '#666' }}>Current</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Account Number */}
+            <Text style={{ fontSize: 14, fontWeight: "600", color: "#333", marginBottom: 8 }}>Account Number *</Text>
+            <TextInput
+              style={{ borderWidth: 1, borderColor: "#DDD", borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14 }}
+              placeholder="Enter account number"
+              keyboardType="number-pad"
+              value={bankDetails.accountNumber}
+              onChangeText={(val) => setBankDetails({ ...bankDetails, accountNumber: val })}
+            />
+
+            {/* Confirm Account Number */}
+            <Text style={{ fontSize: 14, fontWeight: "600", color: "#333", marginBottom: 8 }}>Confirm Account Number *</Text>
+            <TextInput
+              style={{ borderWidth: 1, borderColor: "#DDD", borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14 }}
+              placeholder="Re-enter account number"
+              keyboardType="number-pad"
+              value={bankDetails.accountNumberConfirm}
+              onChangeText={(val) => setBankDetails({ ...bankDetails, accountNumberConfirm: val })}
+            />
+
+            {/* IFSC Code */}
+            <Text style={{ fontSize: 14, fontWeight: "600", color: "#333", marginBottom: 8 }}>IFSC Code *</Text>
+            <TextInput
+              style={{ borderWidth: 1, borderColor: "#DDD", borderRadius: 8, padding: 12, marginBottom: 24, fontSize: 14 }}
+              placeholder="e.g., ICIC0000001"
+              maxLength={11}
+              value={bankDetails.ifscCode}
+              onChangeText={(val) => setBankDetails({ ...bankDetails, ifscCode: val.toUpperCase() })}
+            />
+
+            {/* Submit Button */}
+            <TouchableOpacity
+              style={{ backgroundColor: "#1a2f4d", padding: 16, borderRadius: 8, alignItems: 'center', marginBottom: 32 }}
+              onPress={handleAddBankAccount}
+            >
+              <Text style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}>Save Bank Account</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </Modal>
+
+      {/* ✅ Bank Account Info Display */}
+      {bankAccount && (
+        <View style={{ padding: 16, backgroundColor: "#f0f8ff", marginTop: 16, marginHorizontal: 16, borderRadius: 8, borderLeftWidth: 4, borderLeftColor: "#1a2f4d" }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: "#333" }}>💳 Linked Bank Account</Text>
+            <TouchableOpacity onPress={() => setShowAddBank(true)}>
+              <Text style={{ color: "#1a2f4d", fontWeight: "600" }}>Change</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>{bankAccount.bankName}</Text>
+          <Text style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>{bankAccount.maskedAccount}</Text>
+          <Text style={{ fontSize: 11, color: bankAccount.isVerified ? "#27ae60" : "#f39c12" }}>
+            {bankAccount.isVerified ? '✅ Verified' : `⏳ ${bankAccount.verificationStatus}`}
+          </Text>
+        </View>
+      )}
     </ScrollView>
   );
 }
